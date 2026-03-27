@@ -1,0 +1,12 @@
+services:
+  comfyui:
+    build:
+      context: ./docker/comfyui
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    command: ["python", "main.py", "--listen", "0.0.0.0", "--port", "8188"]
