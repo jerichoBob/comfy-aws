@@ -201,9 +201,14 @@ See [`specs/README.md`](specs/README.md) for the full implementation spec (v1, 2
 
 ## Changelog
 
-0.2.0
+0.3.0
 
 ### Release Notes
+
+#### v0.3.0 (2026-03-27)
+
+- fix: Convert float params to Decimal for DynamoDB compatibility [`169b727`]
+- feat: Add sampler_name and scheduler params to txt2img-sdxl schema [`2cb68aa`]
 
 #### v0.2.0 (2026-03-27)
 
