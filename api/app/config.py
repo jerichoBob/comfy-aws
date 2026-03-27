@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     presigned_url_expiry_seconds: int = 3600
     job_ttl_days: int = 7
     job_timeout_seconds: int = 300
+    api_keys: str = ""  # Comma-separated valid API keys; empty disables auth
+
+    @property
+    def api_key_set(self) -> set[str]:
+        return {k.strip() for k in self.api_keys.split(",") if k.strip()}
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

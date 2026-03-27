@@ -174,3 +174,35 @@ def test_e2e_generation():
     img_r = httpx.get(output_urls[0], timeout=30, follow_redirects=True)
     assert img_r.status_code == 200, f"Failed to fetch output URL: {img_r.status_code}"
     assert img_r.content[:4] == b"\x89PNG", "Output is not a valid PNG"
+
+
+# ---------------------------------------------------------------------------
+# Auth integration tests
+# These run against the live stack. When API_KEYS="" (local dev default),
+# all requests pass through — we verify no false 401s.
+# ---------------------------------------------------------------------------
+
+def test_auth_health_always_accessible():
+    """GET /health must return 200 regardless of auth config."""
+    r = httpx.get(f"{BASE_URL}/health", timeout=10)
+    assert r.status_code == 200
+
+
+def test_auth_no_false_401_when_disabled():
+    """/workflows should not 401 when API_KEYS is empty (local dev default)."""
+    r = httpx.get(f"{BASE_URL}/workflows", timeout=10)
+    # With API_KEYS="" auth is disabled — expect 200, never 401
+    assert r.status_code != 401, "Got unexpected 401 — is API_KEYS set in the running stack?"
+
+
+def test_auth_post_jobs_no_key_when_disabled():
+    """POST /jobs without key should not 401 when auth is disabled."""
+    r = httpx.post(
+        f"{BASE_URL}/jobs",
+        json={"workflow_id": "txt2img-sdxl", "params": {}},
+        timeout=10,
+    )
+    # 422 = validation error (missing required param) — auth passed through
+    # 404 = workflow not found — also fine, auth passed through
+    # 401 = auth blocked it — fail
+    assert r.status_code != 401, "Got unexpected 401 — auth should be disabled (API_KEYS='')"

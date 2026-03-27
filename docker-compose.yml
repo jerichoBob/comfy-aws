@@ -80,6 +80,7 @@ services:
       - AWS_ENDPOINT_URL=http://localstack:4566
       - PRESIGNED_URL_ENDPOINT=http://localhost:4566
       - JOB_TIMEOUT_SECONDS=900
+      - API_KEYS=  # Empty = auth disabled for local dev
     volumes:
       - ./api:/app
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

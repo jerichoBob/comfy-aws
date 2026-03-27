@@ -6,6 +6,7 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as ssm from "aws-cdk-lib/aws-ssm";
 import { Construct } from "constructs";
 import * as path from "path";
 
@@ -48,8 +49,25 @@ export class ServiceConstruct extends Construct {
       })
     );
 
+    // Execution role: allows ECS agent to pull SSM secrets at task start
+    const executionRole = new iam.Role(this, "ExecutionRole", {
+      assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
+      managedPolicies: [
+        iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AmazonECSTaskExecutionRolePolicy"),
+      ],
+    });
+    executionRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: ["ssm:GetParameters"],
+        resources: [
+          `arn:aws:ssm:${cdk.Stack.of(this).region}:${cdk.Stack.of(this).account}:parameter/comfy-aws/api-keys`,
+        ],
+      })
+    );
+
     const taskDef = new ecs.Ec2TaskDefinition(this, "TaskDef", {
       taskRole,
+      executionRole,
       networkMode: ecs.NetworkMode.HOST,
     });
 
@@ -111,6 +129,16 @@ export class ServiceConstruct extends Construct {
         S3_BUCKET: props.bucket.bucketName,
         DYNAMO_TABLE: props.table.tableName,
         AWS_DEFAULT_REGION: cdk.Stack.of(this).region,
+      },
+      secrets: {
+        // Operator sets this SSM parameter before deploying.
+        // Comma-separated keys, e.g. "key-abc123,key-def456".
+        // Empty string (default) disables auth entirely.
+        API_KEYS: ecs.Secret.fromSsmParameter(
+          ssm.StringParameter.fromStringParameterName(
+            this, "ApiKeysParam", "/comfy-aws/api-keys"
+          )
+        ),
       },
       logging: ecs.LogDrivers.awsLogs({
         logGroup,

@@ -69,6 +69,7 @@ cd infra && cdk deploy --all           # deploy to AWS
 | `AWS_ENDPOINT_URL` | — | Set to LocalStack URL in local dev |
 | `PRESIGNED_URL_EXPIRY_SECONDS` | `3600` | Presigned URL lifetime |
 | `JOB_TTL_DAYS` | `7` | DynamoDB job auto-expiry |
+| `API_KEYS` | `""` | Comma-separated valid API keys; empty disables auth. In AWS, sourced from SSM `/comfy-aws/api-keys` |
 
 ## AWS Infrastructure
 

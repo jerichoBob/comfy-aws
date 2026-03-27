@@ -5,6 +5,7 @@ import logging.config
 from fastapi import FastAPI
 
 from app.logging_config import get_logging_config
+from app.middleware.auth import ApiKeyMiddleware
 from app.routers import health, jobs, models, workflows
 from app.services.job_service import recover_stale_jobs
 
@@ -12,6 +13,8 @@ logging.config.dictConfig(get_logging_config())
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="comfy-aws", description="FastAPI wrapper around ComfyUI")
+
+app.add_middleware(ApiKeyMiddleware)
 
 app.include_router(health.router)
 app.include_router(jobs.router)

@@ -7,7 +7,7 @@
 | v1 | ComfyUI on AWS | 23/25 | 🔧 In Progress | robert.w.seaton.jr@gmail.com |
 | v2 | Local E2E Generation Test | 4/4 | ✅ Complete | robert.w.seaton.jr@gmail.com |
 | v3 | CloudFront Output Delivery | 0/11 | ✏️ Draft | — |
-| v4 | API Key Authentication | 0/8 | ✏️ Draft | — |
+| v4 | API Key Authentication | 8/8 | ✅ Complete | — |
 | v5 | React Generation UI | 0/15 | ✏️ Draft | — |
 
 ---
@@ -94,17 +94,17 @@
 
 ### Phase 1: Middleware Implementation
 
-- [ ] Config: add `api_keys: str = ""` and `api_key_set` property to `config.py`
-- [ ] Implement `ApiKeyMiddleware` in `api/app/middleware/auth.py` (Starlette BaseHTTPMiddleware)
-- [ ] Wire middleware into `main.py`
-- [ ] Unit tests: `api/tests/test_auth_middleware.py` (no key, wrong key, valid key, disabled, /health exempt, multi-key)
-- [ ] Integration tests: auth behavior against running stack
+- [x] Config: add `api_keys: str = ""` and `api_key_set` property to `config.py`
+- [x] Implement `ApiKeyMiddleware` in `api/app/middleware/auth.py` (Starlette BaseHTTPMiddleware)
+- [x] Wire middleware into `main.py`
+- [x] Unit tests: `api/tests/test_auth_middleware.py` (no key, wrong key, valid key, disabled, /health exempt, multi-key)
+- [x] Integration tests: auth behavior against running stack
 
 ### Phase 2: Docker + Deployment Wiring
 
-- [ ] Add `API_KEYS: ""` env var to `docker-compose.yml` api service
-- [ ] ECS task definition: pass `API_KEYS` from SSM `/comfy-aws/api-keys`
-- [ ] Update `CLAUDE.md` environment variable table with `API_KEYS` row
+- [x] Add `API_KEYS: ""` env var to `docker-compose.yml` api service
+- [x] ECS task definition: pass `API_KEYS` from SSM `/comfy-aws/api-keys`
+- [x] Update `CLAUDE.md` environment variable table with `API_KEYS` row
 
 ---
 

@@ -2,7 +2,7 @@
 version: 4
 name: api-key-auth
 display_name: "API Key Authentication"
-status: draft
+status: complete
 created: 2026-03-27
 depends_on: [1]
 tags: [security, fastapi, middleware, auth]
