@@ -201,9 +201,14 @@ See [`specs/README.md`](specs/README.md) for the full implementation spec (v1, 2
 
 ## Changelog
 
-0.3.0
+0.4.0
 
 ### Release Notes
+
+#### v0.4.0 (2026-03-27)
+
+- feat: add duration_seconds to job model and lifecycle tracking [`d22dc33`]
+- docs: add v4 API key auth and v5 React UI specs [`0967e58`]
 
 #### v0.3.0 (2026-03-27)
 
