@@ -197,6 +197,22 @@ aws s3 cp sd_xl_base_1.0.safetensors \
 
 See [`specs/README.md`](specs/README.md) for the full implementation spec (v1, 25 tasks across 5 phases).
 
+---
+
+## Changelog
+
+0.1.0
+
+### Release Notes
+
+#### v0.1.0 (2026-03-27)
+
+- feat: Add FastAPI sidecar with full job lifecycle [`8e22592`]
+- feat: Add ComfyUI image, model-sync sidecar, and docker-compose stack [`0070d34`]
+- feat: Add CDK stack for ECS-on-EC2 GPU deployment [`add4033`]
+- chore: Scaffold models directory with gitkeep placeholders [`ff1082b`]
+- chore: Update docs, specs, gitignore, and add Claude automation scripts [`73115b9`]
+
 ## Tech Stack
 
 | Layer | Technology |
