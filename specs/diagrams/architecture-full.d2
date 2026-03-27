@@ -1,0 +1,149 @@
+direction: down
+
+client: Client {
+  shape: person
+}
+
+internet: Internet {
+  shape: cloud
+  style.fill: "#f1f5f9"
+}
+
+client -> internet
+
+aws: AWS {
+  style.fill: "#f0f7ff"
+  style.stroke: "#2563eb"
+
+  vpc: VPC {
+    style.fill: "#e0f2fe"
+    style.stroke: "#0284c7"
+
+    public: Public Subnet {
+      style.fill: "#f0fdf4"
+      style.stroke: "#16a34a"
+      style.stroke-dash: 4
+
+      ec2: EC2 g4dn.xlarge (Spot) {
+        style.fill: "#dcfce7"
+        style.stroke: "#16a34a"
+
+        ecs: ECS Task {
+          style.fill: "#bbf7d0"
+          style.stroke: "#15803d"
+
+          init: model-sync (init container) {
+            shape: rectangle
+            style.fill: "#fef9c3"
+            label: "model-sync\n(init container)\naws s3 sync → /data/models"
+          }
+
+          comfyui: ComfyUI :8188 {
+            shape: rectangle
+            style.fill: "#fce7f3"
+            label: "ComfyUI :8188\n(GPU, internal only)"
+          }
+
+          api: FastAPI :8000 {
+            shape: rectangle
+            style.fill: "#dbeafe"
+            label: "FastAPI :8000\n(public-facing sidecar)"
+          }
+
+          ebs: EBS /data/models {
+            shape: cylinder
+            style.fill: "#fef3c7"
+            label: "EBS 200GB\n/data/models"
+          }
+
+          init -> ebs: "sync models\n(startup)"
+          ebs -> comfyui: "load models"
+          comfyui -> api: "localhost:8188\n(image bytes, status)"
+        }
+
+        asg: ASG {
+          style.fill: "#dcfce7"
+          style.stroke-dash: 4
+          label: "ASG\nmin=0 max=1\nSpot capacity provider"
+        }
+      }
+    }
+  }
+
+  s3: S3 Bucket {
+    shape: cylinder
+    style.fill: "#fff7ed"
+    style.stroke: "#ea580c"
+    label: "S3\nmodels/checkpoints/\nmodels/loras/\noutputs/{job_id}/"
+  }
+
+  dynamo: DynamoDB {
+    shape: cylinder
+    style.fill: "#fef9c3"
+    style.stroke: "#ca8a04"
+    label: "DynamoDB\njobs table\n(TTL 7d, GSI on status)"
+  }
+
+  cloudfront: CloudFront {
+    shape: rectangle
+    style.fill: "#ede9fe"
+    style.stroke: "#7c3aed"
+    label: "CloudFront\n(signed URLs, OAC)"
+  }
+
+  ssm: SSM Parameter Store {
+    shape: rectangle
+    style.fill: "#f0fdf4"
+    style.stroke: "#16a34a"
+    label: "SSM\nCloudFront private key"
+  }
+
+  cw: CloudWatch {
+    shape: rectangle
+    style.fill: "#fce7f3"
+    style.stroke: "#db2777"
+    label: "CloudWatch\nmetrics + logs"
+  }
+}
+
+# Inbound traffic
+internet -> aws.vpc.public.ec2.ecs.api: "HTTP :8000\n(public IP)" {
+  style.stroke: "#2563eb"
+  style.bold: true
+}
+
+# Model sync on startup
+aws.s3 -> aws.vpc.public.ec2.ecs.init: "s3 sync models\n(startup)" {
+  style.stroke: "#ca8a04"
+  style.stroke-dash: 4
+}
+
+# Job output upload
+aws.vpc.public.ec2.ecs.api -> aws.s3: "upload output image\nstore S3 key" {
+  style.stroke: "#db2777"
+}
+
+# Job state
+aws.vpc.public.ec2.ecs.api -> aws.dynamo: "read/write job state" {
+  style.stroke: "#ca8a04"
+}
+
+# CloudFront signed URL delivery (v3)
+aws.cloudfront -> aws.s3: "fetch via OAC\n(private)" {
+  style.stroke: "#7c3aed"
+}
+internet -> aws.cloudfront: "GET signed URL\n(image fetch)" {
+  style.stroke: "#7c3aed"
+}
+
+# SSM key on startup
+aws.ssm -> aws.vpc.public.ec2.ecs.api: "CloudFront private key\n(startup, cached)" {
+  style.stroke: "#16a34a"
+  style.stroke-dash: 4
+}
+
+# Observability
+aws.vpc.public.ec2.ecs.api -> aws.cw: "metrics + structured logs" {
+  style.stroke: "#db2777"
+  style.stroke-dash: 4
+}

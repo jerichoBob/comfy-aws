@@ -1,0 +1,101 @@
+direction: right
+
+client: Client {
+  shape: person
+}
+
+aws: AWS {
+  style.fill: "#f0f7ff"
+  style.stroke: "#2563eb"
+
+  api: FastAPI Sidecar {
+    shape: rectangle
+    style.fill: "#dbeafe"
+  }
+
+  dynamo: DynamoDB {
+    shape: cylinder
+    style.fill: "#fef9c3"
+    label: "DynamoDB\n(stores output_keys)"
+  }
+
+  ssm: SSM Parameter Store {
+    shape: rectangle
+    style.fill: "#f0fdf4"
+    label: "SSM Parameter Store\n/comfy-aws/cloudfront-private-key"
+  }
+
+  cloudfront: CloudFront {
+    shape: rectangle
+    style.fill: "#ede9fe"
+    label: "CloudFront\n(signed URLs required)"
+  }
+
+  s3: S3 Bucket {
+    shape: cylinder
+    style.fill: "#fff7ed"
+    label: "S3 Bucket\n(no public access)\noutputs/{job_id}/*.png"
+  }
+
+  comfyui: ComfyUI {
+    shape: rectangle
+    style.fill: "#fce7f3"
+    label: "ComfyUI :8188"
+  }
+
+  oac: OAC {
+    shape: diamond
+    style.fill: "#ede9fe"
+    label: "Origin Access\nControl"
+  }
+}
+
+# Startup: API fetches private key from SSM (once, cached)
+aws.ssm -> aws.api: "fetch private key\n(startup, cached)" {
+  style.stroke-dash: 4
+  style.stroke: "#16a34a"
+}
+
+# Job submission / upload path
+aws.comfyui -> aws.api: "image bytes\n(GET /view)" {
+  style.stroke: "#db2777"
+}
+aws.api -> aws.s3: "upload image\nstore S3 key" {
+  style.stroke: "#db2777"
+}
+aws.api -> aws.dynamo: "write output_keys\n(not URLs)" {
+  style.stroke: "#db2777"
+}
+
+# Read path: client polls job
+client -> aws.api: "GET /jobs/{id}" {
+  style.stroke: "#2563eb"
+}
+aws.api -> aws.dynamo: "read output_keys" {
+  style.stroke: "#2563eb"
+}
+aws.api -> client: "signed CloudFront URL\n(generated locally via RSA)" {
+  style.stroke: "#2563eb"
+}
+
+# Client fetches image via CloudFront
+client -> aws.cloudfront: "GET /outputs/{job_id}/image.png\n?Signature=..." {
+  style.stroke: "#7c3aed"
+}
+aws.cloudfront -> aws.oac: "authorize via OAC" {
+  style.stroke: "#7c3aed"
+}
+aws.oac -> aws.s3: "fetch object" {
+  style.stroke: "#7c3aed"
+}
+aws.cloudfront -> client: "image bytes" {
+  style.stroke: "#7c3aed"
+}
+
+# Blocked direct access
+client -> aws.s3: "direct GET (blocked)" {
+  style.stroke: "#dc2626"
+  style.stroke-dash: 4
+  style.stroke: "#dc2626"
+  label: "❌ 403 Forbidden\n(bucket policy denies all direct access)"
+}
