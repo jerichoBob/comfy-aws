@@ -1,0 +1,69 @@
+{
+  "description": "SDXL image-to-image generation",
+  "params": {
+    "checkpoint": {
+      "node_id": "4",
+      "input": "ckpt_name",
+      "type": "string",
+      "required": true,
+      "default": null,
+      "description": "Model checkpoint filename (e.g. sd_xl_base_1.0.safetensors)"
+    },
+    "image": {
+      "node_id": "5",
+      "input": "image",
+      "type": "string",
+      "required": true,
+      "default": null,
+      "description": "Input image filename (must be uploaded to ComfyUI input folder)"
+    },
+    "positive_prompt": {
+      "node_id": "6",
+      "input": "text",
+      "type": "string",
+      "required": true,
+      "default": null,
+      "description": "Positive prompt describing the desired output"
+    },
+    "negative_prompt": {
+      "node_id": "7",
+      "input": "text",
+      "type": "string",
+      "required": false,
+      "default": "",
+      "description": "Negative prompt for things to avoid"
+    },
+    "denoise": {
+      "node_id": "10",
+      "input": "denoise",
+      "type": "number",
+      "required": false,
+      "default": 0.75,
+      "description": "Denoising strength (0.0 = no change, 1.0 = full regeneration)"
+    },
+    "steps": {
+      "node_id": "10",
+      "input": "steps",
+      "type": "integer",
+      "required": false,
+      "default": 20,
+      "description": "Number of sampling steps"
+    },
+    "cfg": {
+      "node_id": "10",
+      "input": "cfg",
+      "type": "number",
+      "required": false,
+      "default": 7.0,
+      "description": "Classifier-free guidance scale"
+    },
+    "seed": {
+      "node_id": "10",
+      "input": "seed",
+      "type": "integer",
+      "required": false,
+      "default": 42,
+      "description": "Random seed for reproducibility"
+    }
+  }
+}
