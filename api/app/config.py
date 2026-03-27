@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     job_ttl_days: int = 7
     job_timeout_seconds: int = 300
     api_keys: str = ""  # Comma-separated valid API keys; empty disables auth
+    cloudfront_domain: str = ""  # CloudFront domain for signed URL generation; empty = local dev (S3 presigned)
+    cloudfront_key_pair_id: str = ""
+    cloudfront_private_key_ssm_path: str = "/comfy-aws/cloudfront-private-key"
 
     @property
     def api_key_set(self) -> set[str]:

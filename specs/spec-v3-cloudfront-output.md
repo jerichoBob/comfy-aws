@@ -2,7 +2,7 @@
 version: 3
 name: cloudfront-output
 display_name: "CloudFront Output Delivery"
-status: draft
+status: complete
 created: 2026-03-27
 depends_on: [1]
 tags: [aws, cloudfront, s3, cdn, security, cdk]

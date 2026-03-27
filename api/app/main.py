@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from app.logging_config import get_logging_config
 from app.middleware.auth import ApiKeyMiddleware
 from app.routers import health, jobs, models, workflows
+from app.services import cdn
 from app.services.job_service import recover_stale_jobs
 
 logging.config.dictConfig(get_logging_config())
@@ -39,6 +40,7 @@ if _ui_dist.is_dir():
 @app.on_event("startup")
 async def startup():
     logger.info("comfy-aws starting up")
+    await cdn.load_private_key()
     # Start background stale-job recovery loop
     asyncio.create_task(_recovery_loop(), name="recovery-loop")
 

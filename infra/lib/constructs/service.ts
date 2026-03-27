@@ -20,6 +20,10 @@ export interface ServiceConstructProps {
    *  If omitted, images are built from source (requires Docker + internet). */
   comfyuiImageUri?: string;
   apiImageUri?: string;
+  /** CloudFront domain name for signed URL generation (optional). */
+  cdnDomain?: string;
+  /** CloudFront key pair ID for signed URL generation (optional). */
+  cdnKeyPairId?: string;
 }
 
 export class ServiceConstruct extends Construct {
@@ -48,6 +52,18 @@ export class ServiceConstruct extends Construct {
         resources: ["*"],
       })
     );
+
+    // Grant SSM access for CloudFront private key (only when CDN is configured)
+    if (props.cdnDomain) {
+      taskRole.addToPolicy(
+        new iam.PolicyStatement({
+          actions: ["ssm:GetParameter"],
+          resources: [
+            `arn:aws:ssm:${cdk.Stack.of(this).region}:${cdk.Stack.of(this).account}:parameter/comfy-aws/cloudfront-private-key`,
+          ],
+        })
+      );
+    }
 
     // Execution role: allows ECS agent to pull SSM secrets at task start
     const executionRole = new iam.Role(this, "ExecutionRole", {
@@ -129,6 +145,8 @@ export class ServiceConstruct extends Construct {
         S3_BUCKET: props.bucket.bucketName,
         DYNAMO_TABLE: props.table.tableName,
         AWS_DEFAULT_REGION: cdk.Stack.of(this).region,
+        ...(props.cdnDomain ? { CLOUDFRONT_DOMAIN: props.cdnDomain } : {}),
+        ...(props.cdnKeyPairId ? { CLOUDFRONT_KEY_PAIR_ID: props.cdnKeyPairId } : {}),
       },
       secrets: {
         // Operator sets this SSM parameter before deploying.

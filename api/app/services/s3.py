@@ -18,9 +18,13 @@ def _client_kwargs() -> dict:
 
 
 async def upload_image(job_id: str, filename: str, data: bytes) -> str:
-    """Upload image bytes to S3 and return a presigned URL.
+    """Upload image bytes to S3 and return the S3 key.
 
     S3 key: outputs/{job_id}/{filename}
+
+    URL generation is handled separately at request time by routers/jobs.py —
+    either via CloudFront signed URLs (when CLOUDFRONT_DOMAIN is configured)
+    or S3 presigned URLs (local dev fallback).
     """
     key = f"outputs/{job_id}/{filename}"
     async with _session.client("s3", **_client_kwargs()) as s3:
@@ -30,16 +34,19 @@ async def upload_image(job_id: str, filename: str, data: bytes) -> str:
             Body=data,
             ContentType="image/png",
         )
+    logger.info("Uploaded %s for job %s → %s", filename, job_id, key)
+    return key
 
-    # Generate presigned URL — optionally using a different endpoint (local dev)
+
+async def generate_presigned_url(key: str, expires_in: int | None = None) -> str:
+    """Generate a presigned S3 URL for the given key (local dev fallback)."""
     presigned_kwargs = _client_kwargs()
     if settings.presigned_url_endpoint:
         presigned_kwargs["endpoint_url"] = settings.presigned_url_endpoint
     async with _session.client("s3", **presigned_kwargs) as s3:
-        presigned_url = await s3.generate_presigned_url(
+        url = await s3.generate_presigned_url(
             "get_object",
             Params={"Bucket": settings.s3_bucket, "Key": key},
-            ExpiresIn=settings.presigned_url_expiry_seconds,
+            ExpiresIn=expires_in or settings.presigned_url_expiry_seconds,
         )
-    logger.info("Uploaded %s for job %s → %s", filename, job_id, key)
-    return presigned_url
+    return url

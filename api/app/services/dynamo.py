@@ -43,7 +43,7 @@ def _job_to_item(job: Job) -> dict:
         "status": job.status.value,
         "created_at": job.created_at.isoformat(),
         "updated_at": job.updated_at.isoformat(),
-        "output_urls": job.output_urls,
+        "output_keys": job.output_keys,
         "expires_at": expires_at,
     }
     if job.error is not None:
@@ -61,7 +61,7 @@ def _item_to_job(item: dict) -> Job:
         status=JobStatus(item["status"]),
         created_at=datetime.fromisoformat(item["created_at"]),
         updated_at=datetime.fromisoformat(item["updated_at"]),
-        output_urls=item.get("output_urls", []),
+        output_keys=item.get("output_keys", item.get("output_urls", [])),  # backwards-compat: old records used output_urls
         error=item.get("error"),
         duration_seconds=float(item["duration_seconds"]) if "duration_seconds" in item else None,
     )

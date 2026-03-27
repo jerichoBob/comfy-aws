@@ -70,6 +70,9 @@ cd infra && cdk deploy --all           # deploy to AWS
 | `PRESIGNED_URL_EXPIRY_SECONDS` | `3600` | Presigned URL lifetime |
 | `JOB_TTL_DAYS` | `7` | DynamoDB job auto-expiry |
 | `API_KEYS` | `""` | Comma-separated valid API keys; empty disables auth. In AWS, sourced from SSM `/comfy-aws/api-keys` |
+| `CLOUDFRONT_DOMAIN` | `""` | CloudFront domain for signed URLs; empty = local dev (falls back to S3 presigned) |
+| `CLOUDFRONT_KEY_PAIR_ID` | `""` | CloudFront key pair ID for signed URL signing |
+| `CLOUDFRONT_PRIVATE_KEY_SSM_PATH` | `/comfy-aws/cloudfront-private-key` | SSM path for RSA private key PEM |
 
 ## AWS Infrastructure
 

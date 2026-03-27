@@ -6,7 +6,7 @@
 |---------|------|----------|--------|-------|
 | v1 | ComfyUI on AWS | 23/25 | 🔧 In Progress | robert.w.seaton.jr@gmail.com |
 | v2 | Local E2E Generation Test | 4/4 | ✅ Complete | robert.w.seaton.jr@gmail.com |
-| v3 | CloudFront Output Delivery | 0/11 | ✏️ Draft | — |
+| v3 | CloudFront Output Delivery | 11/11 | ✅ Complete | — |
 | v4 | API Key Authentication | 8/8 | ✅ Complete | — |
 | v5 | React Generation UI | 15/15 | ✅ Complete | — |
 
@@ -64,27 +64,27 @@
 
 ### Phase 1: CDK — CloudFront Distribution
 
-- [ ] Add `CdnConstruct` in `infra/lib/constructs/cdn.ts` (distribution, OAC, key group)
-- [ ] Lock down S3 bucket policy: deny direct `GetObject` on `outputs/*`, allow OAC principal only
-- [ ] Store CloudFront private key PEM in SSM Parameter Store standard (`/comfy-aws/cloudfront-private-key`)
-- [ ] Grant ECS task IAM role `ssm:GetParameter` on the key path
+- [x] Add `CdnConstruct` in `infra/lib/constructs/cdn.ts` (distribution, OAC, key group)
+- [x] Lock down S3 bucket policy: deny direct `GetObject` on `outputs/*`, allow OAC principal only
+- [x] Store CloudFront private key PEM in SSM Parameter Store standard (`/comfy-aws/cloudfront-private-key`)
+- [x] Grant ECS task IAM role `ssm:GetParameter` on the key path
 
 ### Phase 2: API — Key Loading & URL Generation
 
-- [ ] Add `cloudfront_domain`, `cloudfront_key_pair_id`, `cloudfront_private_key_ssm_path` to `config.py`
-- [ ] Add `services/cdn.py`: fetch private key from SSM on startup, `generate_signed_url(s3_key, expires_in_seconds)`
-- [ ] Write unit tests for `cdn.generate_signed_url()` using a fixed test RSA key pair (no AWS calls)
+- [x] Add `cloudfront_domain`, `cloudfront_key_pair_id`, `cloudfront_private_key_ssm_path` to `config.py`
+- [x] Add `services/cdn.py`: fetch private key from SSM on startup, `generate_signed_url(s3_key, expires_in_seconds)`
+- [x] Write unit tests for `cdn.generate_signed_url()` using a fixed test RSA key pair (no AWS calls)
 
 ### Phase 3: API — Store Keys, Generate URLs at Request Time
 
-- [ ] Update `dynamo.py`: store `output_keys: list[str]` instead of `output_urls`
-- [ ] Update `models/job.py`: `output_urls` is computed at read time, not stored
-- [ ] Update `routers/jobs.py` `GET /jobs/{id}`: generate signed URLs per key on each response
+- [x] Update `dynamo.py`: store `output_keys: list[str]` instead of `output_urls`
+- [x] Update `models/job.py`: `output_urls` is computed at read time, not stored
+- [x] Update `routers/jobs.py` `GET /jobs/{id}`: generate signed URLs per key on each response
 
 ### Phase 4: Revocation Helper
 
-- [ ] Add `.claude/scripts/revoke-output.sh` (s3 rm + CloudFront invalidation)
-- [ ] Add `.claude/commands/revoke-output.md` slash command
+- [x] Add `.claude/scripts/revoke-output.sh` (s3 rm + CloudFront invalidation)
+- [x] Add `.claude/commands/revoke-output.md` slash command
 
 ---
 
