@@ -1,8 +1,11 @@
 import asyncio
 import logging
 import logging.config
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.logging_config import get_logging_config
 from app.middleware.auth import ApiKeyMiddleware
@@ -20,6 +23,17 @@ app.include_router(health.router)
 app.include_router(jobs.router)
 app.include_router(models.router)
 app.include_router(workflows.router)
+
+
+@app.get("/ui", include_in_schema=False)
+async def ui_redirect():
+    return RedirectResponse(url="/ui/index.html")
+
+
+# Mount React static files if the build directory exists
+_ui_dist = Path(__file__).parent.parent.parent / "frontend" / "dist"
+if _ui_dist.is_dir():
+    app.mount("/ui", StaticFiles(directory=str(_ui_dist), html=True), name="ui")
 
 
 @app.on_event("startup")

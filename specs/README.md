@@ -8,7 +8,7 @@
 | v2 | Local E2E Generation Test | 4/4 | ✅ Complete | robert.w.seaton.jr@gmail.com |
 | v3 | CloudFront Output Delivery | 0/11 | ✏️ Draft | — |
 | v4 | API Key Authentication | 8/8 | ✅ Complete | — |
-| v5 | React Generation UI | 0/15 | ✏️ Draft | — |
+| v5 | React Generation UI | 15/15 | ✅ Complete | — |
 
 ---
 
@@ -114,33 +114,33 @@
 
 ### Phase 1: Project Scaffold
 
-- [ ] Initialize `frontend/` with Vite + React + TypeScript
-- [ ] Add Tailwind, Lucide React, clsx; configure Inter font
-- [ ] Configure Vite proxy (`/api` → `:8000`) in `vite.config.ts`
-- [ ] Validate `npm run dev` (port 5173) and `npm run build` (exits 0)
+- [x] Initialize `frontend/` with Vite + React + TypeScript
+- [x] Add Tailwind, Lucide React, clsx; configure Inter font
+- [x] Configure Vite proxy (`/api` → `:8000`) in `vite.config.ts`
+- [x] Validate `npm run dev` (port 5173) and `npm run build` (exits 0)
 
 ### Phase 2: Core UI Components
 
-- [ ] `Sidebar.tsx` — checkpoint, workflow, sampler, scheduler dropdowns with skeleton loaders
-- [ ] `PromptForm.tsx` — positive + negative textareas with character count
-- [ ] `SettingsPanel.tsx` — steps slider, CFG slider, seed input + randomize, width/height selects
-- [ ] `SubmitButton.tsx` — idle / loading / disabled states
+- [x] `Sidebar.tsx` — checkpoint, workflow, sampler, scheduler dropdowns with skeleton loaders
+- [x] `PromptForm.tsx` — positive + negative textareas with character count
+- [x] `SettingsPanel.tsx` — steps slider, CFG slider, seed input + randomize, width/height selects
+- [x] `SubmitButton.tsx` — idle / loading / disabled states
 
 ### Phase 3: API Integration
 
-- [ ] `hooks/useApi.ts` — models + workflows fetch, shared `apiFetch` with `X-Api-Key` injection
-- [ ] `hooks/useJob.ts` — submission state machine, 2s polling until `COMPLETED`/`FAILED`
-- [ ] `ResultPanel.tsx` — image display, metadata row (duration, seed, checkpoint), download button
-- [ ] `ErrorBanner.tsx` — error display with "Try Again" reset
+- [x] `hooks/useApi.ts` — models + workflows fetch, shared `apiFetch` with `X-Api-Key` injection
+- [x] `hooks/useJob.ts` — submission state machine, 2s polling until `COMPLETED`/`FAILED`
+- [x] `ResultPanel.tsx` — image display, metadata row (duration, seed, checkpoint), download button
+- [x] `ErrorBanner.tsx` — error display with "Try Again" reset
 
 ### Phase 4: Job History, Connection Status, and Polish
 
-- [ ] `hooks/useJobHistory.ts` — localStorage-persisted history, capped at 20 entries
-- [ ] `JobHistory.tsx` — thumbnail, status badge, relative timestamp per entry
-- [ ] `ConnectionStatus.tsx` — polls `GET /health` every 10s, green/red dot
-- [ ] `ApiKeyInput.tsx` — gear popover, saves to localStorage on blur
-- [ ] Responsive layout (single-column at 768px)
-- [ ] Mount `frontend/dist` as `StaticFiles` at `/ui` in FastAPI
+- [x] `hooks/useJobHistory.ts` — localStorage-persisted history, capped at 20 entries
+- [x] `JobHistory.tsx` — thumbnail, status badge, relative timestamp per entry
+- [x] `ConnectionStatus.tsx` — polls `GET /health` every 10s, green/red dot
+- [x] `ApiKeyInput.tsx` — gear popover, saves to localStorage on blur
+- [x] Responsive layout (single-column at 768px)
+- [x] Mount `frontend/dist` as `StaticFiles` at `/ui` in FastAPI
 
 ---
 
