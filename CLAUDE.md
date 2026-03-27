@@ -8,9 +8,13 @@ FastAPI wrapper around ComfyUI, deployed on AWS ECS (EC2 GPU). The API translate
 
 **Workflow templates**: Each template is a pair of files — `workflow.json` (raw ComfyUI graph with numeric node IDs) and `schema.json` (maps friendly param names to `{node_id, input}` pairs). The `merge_params()` function in `services/workflow.py` injects user params into the graph before submission.
 
-**Job lifecycle**: `POST /jobs` → submit to ComfyUI `/prompt` → background asyncio task opens WebSocket to ComfyUI and watches execution events → on completion, download images from ComfyUI `/view` → upload to S3 → update DynamoDB with presigned URLs → status becomes COMPLETED.
+**Job lifecycle**: `POST /jobs` → submit to ComfyUI `/prompt` → background asyncio task polls `/history/{prompt_id}` every 2s → on completion, download images from ComfyUI `/view` → upload to S3 (stores S3 key in DynamoDB, not URL) → status becomes COMPLETED. URL generation happens at `GET /jobs/{id}` request time: CloudFront signed URL if `CLOUDFRONT_DOMAIN` is set, S3 presigned URL otherwise (local dev).
 
-**Sidecar pattern**: FastAPI and ComfyUI run in the same ECS task, sharing `localhost`. The sidecar calls `http://localhost:8188`. The ALB only routes to the sidecar (port 8000) — ComfyUI is never public-facing.
+**Sidecar pattern**: FastAPI and ComfyUI run in the same ECS task, sharing `localhost`. The sidecar calls `http://localhost:8188`. The API is directly exposed on port 8000 (no ALB) — ComfyUI is never public-facing.
+
+**API key auth**: `ApiKeyMiddleware` in `app/middleware/auth.py` checks `X-API-Key` header against `settings.api_key_set` (parsed from `API_KEYS` env var). Auth is disabled when `API_KEYS=""`. `GET /health` is always exempt.
+
+**CloudFront output delivery**: `services/cdn.py` loads an RSA private key PEM from SSM at startup. `generate_signed_url()` creates CloudFront canned-policy signed URLs locally — zero per-request AWS calls. When `CLOUDFRONT_DOMAIN` is empty, `routers/jobs.py` falls back to S3 presigned URLs via `services/s3.py`.
 
 **LocalStack for local dev**: `AWS_ENDPOINT_URL=http://localstack:4566` redirects all boto3/aioboto3 calls to LocalStack. No code changes between local and AWS — no mocking.
 
@@ -25,37 +29,54 @@ FastAPI wrapper around ComfyUI, deployed on AWS ECS (EC2 GPU). The API translate
 
 | File | Purpose |
 |------|---------|
-| `api/app/comfy_client.py` | Async HTTP + WebSocket client for ComfyUI at `localhost:8188` |
-| `api/app/services/job_service.py` | Full job lifecycle: create, submit, watch, upload, update |
+| `api/app/comfy_client.py` | Async HTTP client for ComfyUI: `submit_prompt()`, `get_history()`, `get_image()` |
+| `api/app/middleware/auth.py` | `ApiKeyMiddleware`: checks `X-API-Key`; skips when `API_KEYS=""`; `/health` exempt |
+| `api/app/services/job_service.py` | Job lifecycle: create, submit, poll history, upload, update DynamoDB |
 | `api/app/services/workflow.py` | Template load/list, `merge_params()`, `validate_params()` |
-| `api/app/services/dynamo.py` | aioboto3 DynamoDB read/write for job state |
-| `api/app/services/s3.py` | aioboto3 S3 image upload + presigned URL generation |
-| `api/app/config.py` | Pydantic Settings (env vars: COMFYUI_URL, S3_BUCKET, DYNAMO_TABLE) |
-| `infra/lib/constructs/service.ts` | ECS task def: comfyui + api sidecar + model-sync init container |
+| `api/app/services/dynamo.py` | DynamoDB read/write; stores `output_keys` (S3 keys, not URLs) |
+| `api/app/services/s3.py` | S3 upload (returns key); `generate_presigned_url()` for local dev fallback |
+| `api/app/services/cdn.py` | CloudFront signed URL generation; loads RSA key from SSM on startup |
+| `api/app/routers/jobs.py` | Job endpoints; `_resolve_output_urls()` generates URLs at request time |
+| `api/app/config.py` | Pydantic Settings (all env vars including API_KEYS, CLOUDFRONT_*) |
+| `frontend/src/App.tsx` | Root layout: left sidebar + main prompt area + right history panel |
+| `frontend/src/hooks/useJob.ts` | Job state machine: idle→submitting→polling→done\|failed (2s poll) |
+| `frontend/src/hooks/useApi.ts` | Models + workflows fetch; `apiFetch()` wrapper injects `X-API-Key` |
+| `infra/lib/constructs/cdn.ts` | CloudFront distribution, OAC, key group, S3 bucket deny policy |
+| `infra/lib/constructs/service.ts` | ECS task def: comfyui + api sidecar + model-sync; pulls API_KEYS from SSM |
 | `infra/lib/constructs/compute.ts` | ECS cluster, ASG g4dn.xlarge Spot, EBS volumes, user data |
 | `infra/lib/constructs/storage.ts` | S3 bucket (7-day lifecycle on outputs), DynamoDB (TTL, GSI) |
-| `infra/lib/constructs/network.ts` | VPC, subnets, NAT, ALB/ECS security groups |
+| `infra/lib/constructs/network.ts` | VPC, subnets, security groups |
 | `docker/comfyui/Dockerfile` | ComfyUI image; `--cpu` for local dev, GPU for AWS |
 | `docker/model-sync/entrypoint.sh` | `aws s3 sync` init container; syncs models S3 → EBS |
 | `docker-compose.yml` | Local dev: ComfyUI (CPU) + FastAPI + LocalStack |
 | `docker-compose.gpu.yml` | GPU override for local GPU testing |
+| `.claude/scripts/revoke-output.sh` | Delete S3 outputs + CloudFront invalidation for a job ID |
 
 ## Development Workflow
 
 ```bash
-# Local dev
+# Local dev (API + ComfyUI + LocalStack)
 docker compose up -d
 curl http://localhost:8000/health   # wait until 200
 
+# React UI — dev server with hot reload (proxies /api → :8000)
+cd frontend && npm install && npm run dev   # → http://localhost:5173
+
+# Build UI for FastAPI serving at /ui
+cd frontend && npm run build
+
 # Unit tests (no docker needed)
-cd api && pytest tests/test_workflow.py -v
+cd api && pytest tests/test_workflow.py tests/test_auth_middleware.py tests/test_cdn.py -v
 
 # Integration tests (requires docker-compose up)
 cd api && pytest tests/ -v
 
 # CDK
 cd infra && npm install && cdk synth   # validate
-cd infra && cdk deploy --all           # deploy to AWS
+cd infra && cdk deploy --all           # deploy to AWS (without CloudFront)
+cd infra && cdk deploy --all \
+  -c cfPublicKey="$(cat cf_public.pem)" \
+  -c cfPrivateKey="$(cat cf_private.pem)"  # with CloudFront
 ```
 
 ## Environment Variables
@@ -84,4 +105,4 @@ cd infra && cdk deploy --all           # deploy to AWS
 
 ## Specs
 
-Implementation tracked in `specs/README.md` — 25 tasks across 5 phases. Run `/sdd-next` to see the next task.
+Implementation tracked in `specs/README.md`. v2 (e2e test), v3 (CloudFront), v4 (API auth), v5 (React UI) all complete. v1 has 2 remaining live-AWS tasks (model-sync integration test). Run `/sdd-next` to see the next task.
