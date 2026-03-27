@@ -41,6 +41,7 @@ async def create_job(workflow_id: str, params: dict) -> Job:
 async def _watch_job(job_id: str, prompt_id: str) -> None:
     """Background task: poll ComfyUI history, upload images, update DynamoDB."""
     output_urls: list[str] = []
+    started_at = asyncio.get_event_loop().time()
     try:
         async with timed_generation(job_id):
             while True:
@@ -61,7 +62,8 @@ async def _watch_job(job_id: str, prompt_id: str) -> None:
                         "ComfyUI execution error",
                     )
                     logger.error("Job %s execution error: %s", job_id, error_msg)
-                    await dynamo.update_job(job_id, status=JobStatus.FAILED, error=error_msg)
+                    duration = round(asyncio.get_event_loop().time() - started_at, 2)
+                    await dynamo.update_job(job_id, status=JobStatus.FAILED, error=error_msg, duration_seconds=duration)
                     return
 
                 outputs = history.get("outputs", {})
@@ -80,8 +82,9 @@ async def _watch_job(job_id: str, prompt_id: str) -> None:
                         except Exception as exc:
                             logger.error("Job %s: failed to upload %s: %s", job_id, filename, exc)
 
-                await dynamo.update_job(job_id, status=JobStatus.COMPLETED, output_urls=output_urls)
-                logger.info("Job %s completed with %d image(s)", job_id, len(output_urls))
+                duration = round(asyncio.get_event_loop().time() - started_at, 2)
+                await dynamo.update_job(job_id, status=JobStatus.COMPLETED, output_urls=output_urls, duration_seconds=duration)
+                logger.info("Job %s completed in %.1fs with %d image(s)", job_id, duration, len(output_urls))
                 return
 
     except Exception as exc:

@@ -23,3 +23,4 @@ class Job(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     output_urls: list[str] = Field(default_factory=list)
     error: str | None = None
+    duration_seconds: float | None = None

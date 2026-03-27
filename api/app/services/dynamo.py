@@ -48,6 +48,8 @@ def _job_to_item(job: Job) -> dict:
     }
     if job.error is not None:
         item["error"] = job.error
+    if job.duration_seconds is not None:
+        item["duration_seconds"] = Decimal(str(job.duration_seconds))
     return item
 
 
@@ -61,6 +63,7 @@ def _item_to_job(item: dict) -> Job:
         updated_at=datetime.fromisoformat(item["updated_at"]),
         output_urls=item.get("output_urls", []),
         error=item.get("error"),
+        duration_seconds=float(item["duration_seconds"]) if "duration_seconds" in item else None,
     )
 
 
@@ -86,9 +89,10 @@ async def update_job(job_id: str, **kwargs: Any) -> None:
     now = datetime.utcnow().isoformat()
     kwargs["updated_at"] = now
 
-    # Convert enums to strings
+    # Convert enums to strings, floats to Decimal
     if "status" in kwargs and isinstance(kwargs["status"], JobStatus):
         kwargs["status"] = kwargs["status"].value
+    kwargs = {k: _floats_to_decimal(v) for k, v in kwargs.items()}
 
     expressions = []
     attr_names: dict[str, str] = {}
