@@ -1,4 +1,5 @@
 import logging
+from decimal import Decimal
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -10,6 +11,17 @@ from app.models.job import Job, JobStatus
 logger = logging.getLogger(__name__)
 
 _session = aioboto3.Session()
+
+
+def _floats_to_decimal(obj: Any) -> Any:
+    """Recursively convert floats to Decimal for DynamoDB compatibility."""
+    if isinstance(obj, float):
+        return Decimal(str(obj))
+    if isinstance(obj, dict):
+        return {k: _floats_to_decimal(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_floats_to_decimal(v) for v in obj]
+    return obj
 
 
 def _client_kwargs() -> dict:
@@ -27,7 +39,7 @@ def _job_to_item(job: Job) -> dict:
         "PK": f"JOB#{job.id}",
         "id": job.id,
         "workflow_id": job.workflow_id,
-        "params": job.params,
+        "params": _floats_to_decimal(job.params),
         "status": job.status.value,
         "created_at": job.created_at.isoformat(),
         "updated_at": job.updated_at.isoformat(),
