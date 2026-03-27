@@ -201,9 +201,13 @@ See [`specs/README.md`](specs/README.md) for the full implementation spec (v1, 2
 
 ## Changelog
 
-0.1.0
+0.2.0
 
 ### Release Notes
+
+#### v0.2.0 (2026-03-27)
+
+- docs: Add v3 CloudFront output delivery spec and architecture diagrams [`12572ef`]
 
 #### v0.1.0 (2026-03-27)
 
