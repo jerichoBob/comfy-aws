@@ -7,6 +7,8 @@
 | v1 | ComfyUI on AWS | 23/25 | 🔧 In Progress | robert.w.seaton.jr@gmail.com |
 | v2 | Local E2E Generation Test | 4/4 | ✅ Complete | robert.w.seaton.jr@gmail.com |
 | v3 | CloudFront Output Delivery | 0/11 | ✏️ Draft | — |
+| v4 | API Key Authentication | 0/8 | ✏️ Draft | — |
+| v5 | React Generation UI | 0/15 | ✏️ Draft | — |
 
 ---
 
@@ -83,6 +85,62 @@
 
 - [ ] Add `.claude/scripts/revoke-output.sh` (s3 rm + CloudFront invalidation)
 - [ ] Add `.claude/commands/revoke-output.md` slash command
+
+---
+
+## v4: API Key Authentication
+
+**Spec**: [spec-v4-api-key-auth.md](spec-v4-api-key-auth.md)
+
+### Phase 1: Middleware Implementation
+
+- [ ] Config: add `api_keys: str = ""` and `api_key_set` property to `config.py`
+- [ ] Implement `ApiKeyMiddleware` in `api/app/middleware/auth.py` (Starlette BaseHTTPMiddleware)
+- [ ] Wire middleware into `main.py`
+- [ ] Unit tests: `api/tests/test_auth_middleware.py` (no key, wrong key, valid key, disabled, /health exempt, multi-key)
+- [ ] Integration tests: auth behavior against running stack
+
+### Phase 2: Docker + Deployment Wiring
+
+- [ ] Add `API_KEYS: ""` env var to `docker-compose.yml` api service
+- [ ] ECS task definition: pass `API_KEYS` from SSM `/comfy-aws/api-keys`
+- [ ] Update `CLAUDE.md` environment variable table with `API_KEYS` row
+
+---
+
+## v5: React Generation UI
+
+**Spec**: [spec-v5-react-ui.md](spec-v5-react-ui.md)
+
+### Phase 1: Project Scaffold
+
+- [ ] Initialize `frontend/` with Vite + React + TypeScript
+- [ ] Add Tailwind, Lucide React, clsx; configure Inter font
+- [ ] Configure Vite proxy (`/api` → `:8000`) in `vite.config.ts`
+- [ ] Validate `npm run dev` (port 5173) and `npm run build` (exits 0)
+
+### Phase 2: Core UI Components
+
+- [ ] `Sidebar.tsx` — checkpoint, workflow, sampler, scheduler dropdowns with skeleton loaders
+- [ ] `PromptForm.tsx` — positive + negative textareas with character count
+- [ ] `SettingsPanel.tsx` — steps slider, CFG slider, seed input + randomize, width/height selects
+- [ ] `SubmitButton.tsx` — idle / loading / disabled states
+
+### Phase 3: API Integration
+
+- [ ] `hooks/useApi.ts` — models + workflows fetch, shared `apiFetch` with `X-Api-Key` injection
+- [ ] `hooks/useJob.ts` — submission state machine, 2s polling until `COMPLETED`/`FAILED`
+- [ ] `ResultPanel.tsx` — image display, metadata row (duration, seed, checkpoint), download button
+- [ ] `ErrorBanner.tsx` — error display with "Try Again" reset
+
+### Phase 4: Job History, Connection Status, and Polish
+
+- [ ] `hooks/useJobHistory.ts` — localStorage-persisted history, capped at 20 entries
+- [ ] `JobHistory.tsx` — thumbnail, status badge, relative timestamp per entry
+- [ ] `ConnectionStatus.tsx` — polls `GET /health` every 10s, green/red dot
+- [ ] `ApiKeyInput.tsx` — gear popover, saves to localStorage on blur
+- [ ] Responsive layout (single-column at 768px)
+- [ ] Mount `frontend/dist` as `StaticFiles` at `/ui` in FastAPI
 
 ---
 
