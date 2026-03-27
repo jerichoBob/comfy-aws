@@ -5,15 +5,15 @@ Run ComfyUI on AWS behind a clean REST API. FastAPI sidecar wraps ComfyUI's nati
 ## Architecture
 
 ```
-Internet → ALB → FastAPI sidecar :8000
-                     │  (localhost)
-                 ComfyUI :8188  ←──── EBS /data/models
-                                           ↑
-                                    S3 sync on startup
+Internet → EC2 public IP :8000 → FastAPI sidecar
+                                      │  (localhost)
+                                  ComfyUI :8188  ←──── EBS /data/models
+                                                             ↑
+                                                      S3 sync on startup
 ```
 
-- **Compute**: ECS on EC2 `g4dn.xlarge` Spot (T4 GPU, 16GB VRAM)
-- **API**: FastAPI sidecar in same ECS task as ComfyUI
+- **Compute**: ECS on EC2 `g4dn.xlarge` Spot (T4 GPU, 16GB VRAM), ASG min=0
+- **API**: FastAPI sidecar in same ECS task as ComfyUI (no ALB — ~$0 idle cost)
 - **Storage**: S3 for models + generated outputs; DynamoDB for job state
 - **Local dev**: `docker-compose` with ComfyUI (CPU mode) + LocalStack (S3/DynamoDB)
 
@@ -32,23 +32,30 @@ Internet → ALB → FastAPI sidecar :8000
 ### Example
 
 ```bash
+# Local dev
+BASE=http://localhost:8000
+
+# AWS (replace with instance public IP)
+BASE=http://<instance-public-ip>:8000
+
 # List available models
-curl http://localhost:8000/models
+curl $BASE/models
 
 # Submit a txt2img job
-curl -X POST http://localhost:8000/jobs \
+curl -X POST $BASE/jobs \
   -H "Content-Type: application/json" \
   -d '{
     "workflow_id": "txt2img-sdxl",
     "params": {
       "positive_prompt": "a red cat on a rooftop at sunset",
+      "checkpoint": "sd_xl_base_1.0.safetensors",
       "steps": 25,
-      "seed": -1
+      "seed": 42
     }
   }'
 
 # Poll for result
-curl http://localhost:8000/jobs/{job_id}
+curl $BASE/jobs/{job_id}
 ```
 
 ## Workflow Template System
@@ -117,7 +124,7 @@ comfy-aws/
 │       ├── network.ts          # VPC, subnets, security groups
 │       ├── storage.ts          # S3 bucket, DynamoDB table
 │       ├── compute.ts          # ECS cluster, ASG g4dn.xlarge Spot
-│       └── service.ts          # ECS task def, ALB, IAM roles
+│       └── service.ts          # ECS task def, IAM roles (no ALB)
 ├── specs/                      # SDD specification documents
 │   ├── README.md
 │   └── spec-v1-comfy-aws.md
@@ -127,18 +134,63 @@ comfy-aws/
 
 ## AWS Deployment
 
+### One-time bootstrap
+
 ```bash
-# Bootstrap CDK (one-time per account/region)
-cd infra && cdk bootstrap
+cd infra
+npm install
+npx cdk bootstrap --profile personal    # or --profile work
+```
 
-# Deploy all stacks
-cdk deploy --all
+### Deploy (standard — requires Docker + internet)
 
-# Upload models to S3
-aws s3 sync ./models/ s3://{bucket}/models/
+```bash
+npx cdk deploy --profile personal --require-approval never
+```
 
-# Scale up ECS (ASG starts at 0)
-aws autoscaling set-desired-capacity --auto-scaling-group-name comfy-asg --desired-capacity 1
+### Deploy on Apple Silicon (arm64 → amd64 cross-compile issues)
+
+Docker Desktop's QEMU networking is unreliable for `linux/amd64` builds on M-series Macs.
+Build and push images separately first, then deploy without Docker:
+
+```bash
+# Step 1 — build images (uses docker buildx with docker-container driver)
+bash .claude/scripts/build-and-push.sh personal
+
+# Step 2 — deploy CloudFormation only (no Docker needed, uses pre-built images)
+npx cdk deploy --profile personal --require-approval never \
+  -c comfyuiImage=<uri printed by step 1> \
+  -c apiImage=<uri printed by step 1>
+```
+
+### Spin up / spin down
+
+```bash
+# Find your ASG name
+ASG=$(aws autoscaling describe-auto-scaling-groups --profile personal \
+  --query 'AutoScalingGroups[?contains(AutoScalingGroupName,`ComfyAws`)].AutoScalingGroupName' \
+  --output text)
+
+# Spin up (starts g4dn.xlarge Spot, ~$0.16/hr)
+aws autoscaling set-desired-capacity --auto-scaling-group-name $ASG \
+  --desired-capacity 1 --profile personal
+
+# Find the public IP once running (~60s)
+aws ec2 describe-instances --profile personal \
+  --filters Name=instance-state-name,Values=running \
+  --query 'Reservations[].Instances[].PublicIpAddress' --output text
+
+# Spin down (terminates instance, stops billing)
+aws autoscaling set-desired-capacity --auto-scaling-group-name $ASG \
+  --desired-capacity 0 --profile personal
+```
+
+### Upload models
+
+```bash
+# Sync a checkpoint to S3 (model-sync init container picks it up on next spin-up)
+aws s3 cp sd_xl_base_1.0.safetensors \
+  s3://{bucket}/models/checkpoints/sd_xl_base_1.0.safetensors --profile personal
 ```
 
 ## Specs

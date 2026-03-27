@@ -26,3 +26,10 @@ cdk.out/
 
 # Docker
 *.tar
+
+# Models (large binary files — drop checkpoints here for local dev)
+models/**/*.safetensors
+models/**/*.ckpt
+models/**/*.pt
+models/**/*.pth
+models/**/*.bin
