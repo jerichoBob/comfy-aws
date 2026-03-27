@@ -201,9 +201,15 @@ See [`specs/README.md`](specs/README.md) for the full implementation spec (v1, 2
 
 ## Changelog
 
-0.4.0
+0.5.0
 
 ### Release Notes
+
+#### v0.5.0 (2026-03-27)
+
+- feat: implement CloudFront output delivery (v3) [`5223406`]
+- feat: implement React generation UI (v5) [`7916823`]
+- feat: implement API key authentication middleware (v4) [`65a673e`]
 
 #### v0.4.0 (2026-03-27)
 
