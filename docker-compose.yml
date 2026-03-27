@@ -79,6 +79,7 @@ services:
       - AWS_SECRET_ACCESS_KEY=test
       - AWS_ENDPOINT_URL=http://localstack:4566
       - PRESIGNED_URL_ENDPOINT=http://localhost:4566
+      - JOB_TIMEOUT_SECONDS=900
     volumes:
       - ./api:/app
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

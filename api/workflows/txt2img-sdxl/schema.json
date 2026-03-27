@@ -41,6 +41,22 @@
       "default": 7.0,
       "description": "Classifier-free guidance scale"
     },
+    "sampler_name": {
+      "node_id": "10",
+      "input": "sampler_name",
+      "type": "string",
+      "required": false,
+      "default": "euler",
+      "description": "KSampler sampler (e.g. euler, dpmpp_2m, dpmpp_sde)"
+    },
+    "scheduler": {
+      "node_id": "10",
+      "input": "scheduler",
+      "type": "string",
+      "required": false,
+      "default": "normal",
+      "description": "KSampler scheduler (e.g. normal, karras, exponential)"
+    },
     "seed": {
       "node_id": "10",
       "input": "seed",
