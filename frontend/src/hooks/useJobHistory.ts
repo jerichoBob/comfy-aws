@@ -46,10 +46,18 @@ export function useJobHistory() {
     })
   }, [])
 
+  const removeEntry = useCallback((id: string) => {
+    setHistory(prev => {
+      const next = prev.filter(e => e.id !== id)
+      save(next)
+      return next
+    })
+  }, [])
+
   const clearHistory = useCallback(() => {
     setHistory([])
     localStorage.removeItem(STORAGE_KEY)
   }, [])
 
-  return { history, addEntry, clearHistory }
+  return { history, addEntry, removeEntry, clearHistory }
 }

@@ -1,10 +1,14 @@
 import clsx from 'clsx'
-import { Image, Trash2 } from 'lucide-react'
+import { Image, Trash2, X, RotateCcw } from 'lucide-react'
 import type { HistoryEntry } from '../hooks/useJobHistory'
+import type { LightboxMeta } from './Lightbox'
 
 interface Props {
   history: HistoryEntry[]
   onClear: () => void
+  onRemove?: (id: string) => void
+  onRetry?: (params: Record<string, unknown>) => void
+  onImageClick?: (url: string, meta: LightboxMeta) => void
 }
 
 function relativeTime(iso: string): string {
@@ -25,7 +29,7 @@ const STATUS_STYLES: Record<string, string> = {
   CANCELLED: 'bg-zinc-800 text-zinc-500',
 }
 
-export function JobHistory({ history, onClear }: Props) {
+export function JobHistory({ history, onClear, onRemove, onRetry, onImageClick }: Props) {
   if (history.length === 0) {
     return (
       <div className="p-4 text-xs text-zinc-600 text-center">No jobs yet</div>
@@ -39,7 +43,7 @@ export function JobHistory({ history, onClear }: Props) {
         <button
           type="button"
           onClick={onClear}
-          title="Clear history"
+          title="Clear all history"
           className="p-1 text-zinc-600 hover:text-zinc-400 transition-colors"
         >
           <Trash2 size={12} />
@@ -47,10 +51,17 @@ export function JobHistory({ history, onClear }: Props) {
       </div>
 
       {history.map(entry => (
-        <div key={entry.id} className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
+        <div key={entry.id} className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors group">
           <div className="w-12 h-12 rounded shrink-0 overflow-hidden bg-zinc-800 border border-zinc-700 flex items-center justify-center">
             {entry.thumbnail_url ? (
-              <img src={entry.thumbnail_url} alt="" className="w-full h-full object-cover" />
+              <button
+                type="button"
+                className="w-full h-full p-0 cursor-pointer"
+                onClick={() => onImageClick?.(entry.thumbnail_url!, { ...(entry.params as LightboxMeta), duration_seconds: entry.duration_seconds })}
+                title="View full size"
+              >
+                <img src={entry.thumbnail_url} alt="" className="w-full h-full object-cover" />
+              </button>
             ) : (
               <Image size={16} className="text-zinc-600" />
             )}
@@ -68,9 +79,32 @@ export function JobHistory({ history, onClear }: Props) {
             <p className="text-xs text-zinc-600 mt-0.5 truncate">
               {String(entry.params.positive_prompt ?? entry.id)}
             </p>
+
+            {entry.status === 'FAILED' && onRetry && (
+              <button
+                type="button"
+                onClick={() => onRetry(entry.params)}
+                className="mt-1 flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300 transition-colors"
+              >
+                <RotateCcw size={10} />
+                Retry
+              </button>
+            )}
           </div>
 
-          <span className="text-xs text-zinc-700 shrink-0">{relativeTime(entry.created_at)}</span>
+          <div className="flex flex-col items-end gap-1 shrink-0">
+            <span className="text-xs text-zinc-700">{relativeTime(entry.created_at)}</span>
+            {onRemove && (
+              <button
+                type="button"
+                onClick={() => onRemove(entry.id)}
+                title="Remove from history"
+                className="opacity-0 group-hover:opacity-100 p-0.5 text-zinc-600 hover:text-zinc-400 transition-all"
+              >
+                <X size={11} />
+              </button>
+            )}
+          </div>
         </div>
       ))}
     </div>

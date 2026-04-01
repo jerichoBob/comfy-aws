@@ -1,25 +1,38 @@
+import { useState } from 'react'
 import { Clock, Download, Hash, Box } from 'lucide-react'
 import type { Job } from '../hooks/useJob'
+import { Lightbox, type LightboxMeta } from './Lightbox'
 
 interface Props {
   job: Job
+  onCopyToSession?: (meta: LightboxMeta) => void
 }
 
-export function ResultPanel({ job }: Props) {
+export function ResultPanel({ job, onCopyToSession }: Props) {
+  const [lightboxOpen, setLightboxOpen] = useState(false)
   const imageUrl = job.output_urls[0]
   const checkpoint = String(job.params.checkpoint ?? '—')
   const seed = String(job.params.seed ?? '—')
 
+  const meta: LightboxMeta = {
+    ...(job.params as LightboxMeta),
+    duration_seconds: job.duration_seconds ?? undefined,
+  }
+
   return (
     <div className="flex flex-col gap-4">
       {imageUrl && (
-        <div className="rounded-lg overflow-hidden border border-zinc-700 bg-zinc-800">
+        <button
+          type="button"
+          className="rounded-lg overflow-hidden border border-zinc-700 bg-zinc-800 cursor-pointer p-0 block w-full"
+          onClick={() => setLightboxOpen(true)}
+        >
           <img
             src={imageUrl}
             alt="Generated output"
             className="w-full object-contain max-h-[60vh]"
           />
-        </div>
+        </button>
       )}
 
       <div className="flex flex-wrap gap-4 text-sm text-zinc-400">
@@ -48,6 +61,10 @@ export function ResultPanel({ job }: Props) {
           <Download size={14} />
           Download image
         </a>
+      )}
+
+      {lightboxOpen && imageUrl && (
+        <Lightbox url={imageUrl} meta={meta} onClose={() => setLightboxOpen(false)} onCopyToSession={onCopyToSession} />
       )}
     </div>
   )
