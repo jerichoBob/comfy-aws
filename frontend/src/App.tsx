@@ -3,19 +3,23 @@ import { ApiKeyInput } from './components/ApiKeyInput'
 import { ConnectionStatus } from './components/ConnectionStatus'
 import { ErrorBanner } from './components/ErrorBanner'
 import { JobHistory } from './components/JobHistory'
+import { Lightbox, type LightboxMeta } from './components/Lightbox'
 import { PromptForm } from './components/PromptForm'
 import { ResultPanel } from './components/ResultPanel'
 import { SettingsPanel } from './components/SettingsPanel'
 import { Sidebar } from './components/Sidebar'
 import { SubmitButton } from './components/SubmitButton'
-import { useApi } from './hooks/useApi'
+import { useApi, apiFetch, type WorkflowParam } from './hooks/useApi'
+import { useActiveJobs } from './hooks/useActiveJobs'
 import { useJob } from './hooks/useJob'
 import { useJobHistory } from './hooks/useJobHistory'
+import { ActiveJobs } from './components/ActiveJobs'
 
 export default function App() {
   const { models, workflows, loading } = useApi()
   const { state, submit, reset } = useJob()
-  const { history, addEntry, clearHistory } = useJobHistory()
+  const { history, addEntry, removeEntry, clearHistory } = useJobHistory()
+  const { jobs: activeJobs, cancelJob } = useActiveJobs()
 
   // Sidebar selections
   const [workflow, setWorkflow] = useState('')
@@ -32,9 +36,21 @@ export default function App() {
   const [width, setWidth] = useState(1024)
   const [height, setHeight] = useState(1024)
 
+  // Workflow schema for validation
+  const [workflowSchema, setWorkflowSchema] = useState<Record<string, WorkflowParam>>({})
+  useEffect(() => {
+    if (!workflow) return
+    apiFetch(`/workflows/${workflow}`).then(r => r.json()).then(data => {
+      setWorkflowSchema(data.params ?? {})
+    }).catch(() => setWorkflowSchema({}))
+  }, [workflow])
+
   // Set defaults once data loads
   useEffect(() => {
-    if (workflows.length > 0 && !workflow) setWorkflow(workflows[0])
+    if (workflows.length > 0 && !workflow) {
+      const preferred = workflows.includes('txt2img-sdxl') ? 'txt2img-sdxl' : workflows[0]
+      setWorkflow(preferred)
+    }
   }, [workflows, workflow])
 
   useEffect(() => {
@@ -47,8 +63,16 @@ export default function App() {
     if (state.phase === 'failed' && state.job) addEntry(state.job)
   }, [state, addEntry])
 
+  // Params the current UI can satisfy
+  const satisfiedParams = new Set(['checkpoint', 'positive_prompt', 'negative_prompt',
+    'sampler_name', 'scheduler', 'steps', 'cfg', 'seed', 'width', 'height'])
+  const missingRequired = Object.entries(workflowSchema)
+    .filter(([key, p]) => p.required && !satisfiedParams.has(key))
+    .map(([key]) => key)
+
   const handleSubmit = () => {
     if (!positive.trim()) return
+    if (missingRequired.length > 0) return
     submit(workflow, {
       positive_prompt: positive,
       negative_prompt: negative || undefined,
@@ -61,6 +85,21 @@ export default function App() {
       width,
       height,
     })
+  }
+
+  const [historyLightbox, setHistoryLightbox] = useState<{ url: string; meta: LightboxMeta } | null>(null)
+
+  function handleCopyToSession(meta: LightboxMeta) {
+    if (meta.positive_prompt != null) setPositive(String(meta.positive_prompt))
+    if (meta.negative_prompt != null) setNegative(String(meta.negative_prompt))
+    if (meta.checkpoint != null) setCheckpoint(String(meta.checkpoint))
+    if (meta.sampler_name != null) setSampler(String(meta.sampler_name))
+    if (meta.scheduler != null) setScheduler(String(meta.scheduler))
+    if (meta.steps != null) setSteps(Number(meta.steps))
+    if (meta.cfg != null) setCfg(Number(meta.cfg))
+    if (meta.seed != null) setSeed(Number(meta.seed))
+    if (meta.width != null) setWidth(Number(meta.width))
+    if (meta.height != null) setHeight(Number(meta.height))
   }
 
   const isLoading = state.phase === 'submitting' || state.phase === 'polling'
@@ -118,23 +157,34 @@ export default function App() {
               onHeightChange={setHeight}
             />
 
-            <SubmitButton loading={isLoading} onClick={handleSubmit} />
+            <SubmitButton loading={isLoading} onClick={handleSubmit} missingParams={missingRequired} />
 
             {state.phase === 'failed' && (
               <ErrorBanner message={state.error} onReset={reset} />
             )}
 
             {state.phase === 'done' && (
-              <ResultPanel job={state.job} />
+              <ResultPanel job={state.job} onCopyToSession={handleCopyToSession} />
             )}
           </div>
         </div>
       </main>
 
-      {/* Right panel: job history */}
+      {/* Right panel: active jobs + history */}
       <aside className="w-64 shrink-0 border-l border-zinc-800 overflow-y-auto bg-zinc-900">
-        <JobHistory history={history} onClear={clearHistory} />
+        <ActiveJobs jobs={activeJobs} onCancel={cancelJob} />
+        <JobHistory
+          history={history}
+          onClear={clearHistory}
+          onRemove={removeEntry}
+          onRetry={params => submit(String(params.workflow_id ?? workflow), params)}
+          onImageClick={(url, meta) => setHistoryLightbox({ url, meta })}
+        />
       </aside>
+
+      {historyLightbox && (
+        <Lightbox url={historyLightbox.url} meta={historyLightbox.meta} onClose={() => setHistoryLightbox(null)} onCopyToSession={handleCopyToSession} />
+      )}
     </div>
   )
 }
