@@ -262,9 +262,15 @@ See [`specs/README.md`](specs/README.md) for implementation status. v2–v5 comp
 
 ## Changelog
 
-0.5.0
+0.6.0
 
 ### Release Notes
+
+#### v0.6.0 (2026-04-01)
+
+- feat: add image lightbox with full-screen overlay and copy-to-session [`2c5393d`]
+- chore: add Vitest + React Testing Library test infrastructure [`f43819a`]
+- docs: update README and CLAUDE.md to reflect v3-v5 implementation [`baec148`]
 
 #### v0.5.0 (2026-03-27)
 
