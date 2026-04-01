@@ -9,6 +9,8 @@
 | v3 | CloudFront Output Delivery | 11/11 | ✅ Complete | — |
 | v4 | API Key Authentication | 8/8 | ✅ Complete | — |
 | v5 | React Generation UI | 15/15 | ✅ Complete | — |
+| v6 | Image Lightbox | 8/8 | ✅ Complete | robert.w.seaton.jr@gmail.com |
+| v7 | Job Management | 13/13 | ✅ Complete | robert.w.seaton.jr@gmail.com |
 
 ---
 
@@ -141,6 +143,67 @@
 - [x] `ApiKeyInput.tsx` — gear popover, saves to localStorage on blur
 - [x] Responsive layout (single-column at 768px)
 - [x] Mount `frontend/dist` as `StaticFiles` at `/ui` in FastAPI
+
+---
+
+## v6: Image Lightbox
+
+**Spec**: [spec-v6-image-lightbox.md](spec-v6-image-lightbox.md)
+
+### Phase 1: Lightbox Component
+
+- [x] Create `frontend/src/components/Lightbox.tsx` — portal-based full-screen overlay, centered image, backdrop click closes, ESC key closes
+- [x] Add `overflow-hidden` to `<body>` while lightbox is open to trap scroll
+
+### Phase 2: Wire Up ResultPanel
+
+- [x] Add lightbox state to `ResultPanel.tsx`, wrap result image with click handler
+- [x] Render `<Lightbox>` when image is clicked
+
+### Phase 3: Wire Up JobHistory
+
+- [x] Add `onImageClick?: (url: string) => void` prop to `JobHistory.tsx`
+- [x] Wire click handler on thumbnails; lift lightbox state to `App.tsx`
+
+### Phase 4: Tests
+
+- [x] Vitest + React Testing Library: `Lightbox` renders with URL, ESC fires `onClose`, backdrop click fires `onClose`
+- [x] Confirm `ResultPanel` and `JobHistory` click handlers open the lightbox (real DOM render, no mocks)
+
+---
+
+## v7: Job Management
+
+**Spec**: [spec-v7-job-management.md](spec-v7-job-management.md)
+
+### Phase 1: API — List and Cancel Endpoints
+
+- [x] Add `GET /jobs` endpoint — queries DynamoDB GSI by status+created_at, limit 20, optional `?status=` filter
+- [x] Add `POST /jobs/{id}/cancel` endpoint — sets status to CANCELLED, calls ComfyUI `/interrupt` if RUNNING
+- [x] Add `dynamo.list_jobs(status, limit)` to `services/dynamo.py`
+- [x] Integration tests for `GET /jobs` and `POST /jobs/{id}/cancel` against LocalStack
+
+### Phase 2: Frontend — Active Jobs Hook
+
+- [x] Add `hooks/useActiveJobs.ts` — polls `GET /jobs?status=RUNNING` every 3s, exposes list + `cancelJob(id)`
+- [x] `cancelJob` calls `POST /jobs/{id}/cancel` with optimistic removal
+
+### Phase 3: Frontend — Active Jobs UI
+
+- [x] Active jobs section in right sidebar (above history, only visible when jobs are in-flight)
+- [x] Each entry: status badge, truncated prompt, elapsed time, Cancel button with optimistic fade-out
+
+### Phase 4: Frontend — Retry and Per-Entry Delete
+
+- [x] Add Retry button to failed entries in `JobHistory.tsx` — resubmits with exact same params (including seed)
+- [x] Wire `onRetry` prop from `App.tsx` → `JobHistory` → calls `submit()` with `entry.params`
+- [x] Add per-entry delete button to `JobHistory.tsx` — removes single entry from localStorage history
+
+### Phase 5: Tests
+
+- [x] Integration: `GET /jobs` returns list filtered by status
+- [x] Integration: `POST /jobs/{id}/cancel` transitions to CANCELLED
+- [x] Frontend Vitest + RTL: active jobs renders, cancel triggers optimistic removal
 
 ---
 
