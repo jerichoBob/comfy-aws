@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from app.models.job import Job
@@ -42,6 +42,15 @@ async def _resolve_output_urls(job: Job) -> Job:
 
     job.output_urls = urls
     return job
+
+
+@router.get("", response_model=list[Job])
+async def list_jobs(status: str | None = Query(default=None, description="Filter by job status (e.g. RUNNING, COMPLETED)")):
+    jobs = await job_service.list_jobs(status=status)
+    results = []
+    for job in jobs:
+        results.append(await _resolve_output_urls(job))
+    return results
 
 
 @router.post("", response_model=Job, status_code=202)

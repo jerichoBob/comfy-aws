@@ -111,6 +111,12 @@ class ComfyClient:
             "vaes": vaes if isinstance(vaes, list) else [],
         }
 
+    async def interrupt(self) -> None:
+        """POST /interrupt — stop the currently executing generation."""
+        async with httpx.AsyncClient() as client:
+            response = await client.post(f"{self.base_url}/interrupt", timeout=10.0)
+            response.raise_for_status()
+
     async def delete_from_queue(self, prompt_id: str) -> None:
         """POST /queue — delete a pending prompt from the queue."""
         async with httpx.AsyncClient() as client:

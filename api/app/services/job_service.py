@@ -92,6 +92,10 @@ async def _watch_job(job_id: str, prompt_id: str) -> None:
         await dynamo.update_job(job_id, status=JobStatus.FAILED, error=str(exc))
 
 
+async def list_jobs(status: str | None = None, limit: int = 20) -> list[Job]:
+    return await dynamo.list_jobs(status=status, limit=limit)
+
+
 async def get_job(job_id: str) -> Job | None:
     return await dynamo.get_job(job_id)
 
@@ -104,10 +108,14 @@ async def cancel_job(job_id: str) -> Job | None:
         return job
 
     try:
-        # Best-effort: remove from ComfyUI queue (may have already started)
-        await _comfy.delete_from_queue(job_id)
+        if job.status == JobStatus.RUNNING:
+            # Interrupt the currently executing generation
+            await _comfy.interrupt()
+        else:
+            # Remove from pending queue
+            await _comfy.delete_from_queue(job_id)
     except Exception as exc:
-        logger.warning("Could not remove job %s from ComfyUI queue: %s", job_id, exc)
+        logger.warning("Could not cancel job %s in ComfyUI: %s", job_id, exc)
 
     await dynamo.update_job(job_id, status=JobStatus.CANCELLED)
     job.status = JobStatus.CANCELLED

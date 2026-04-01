@@ -118,6 +118,28 @@ async def update_job(job_id: str, **kwargs: Any) -> None:
     logger.info("Updated job %s: %s", job_id, list(kwargs.keys()))
 
 
+async def list_jobs(status: str | None = None, limit: int = 20) -> list[Job]:
+    """List jobs from DynamoDB. If status given, query GSI; otherwise scan (capped at limit)."""
+    async with _session.resource("dynamodb", **_client_kwargs()) as ddb:
+        table = await ddb.Table(settings.dynamo_table)
+        if status:
+            response = await table.query(
+                IndexName="status-created_at-index",
+                KeyConditionExpression="#s = :s",
+                ExpressionAttributeNames={"#s": "status"},
+                ExpressionAttributeValues={":s": status},
+                ScanIndexForward=False,  # newest first
+                Limit=limit,
+            )
+        else:
+            response = await table.scan(Limit=limit)
+    items = response.get("Items", [])
+    jobs = [_item_to_job(item) for item in items]
+    if not status:
+        jobs.sort(key=lambda j: j.created_at, reverse=True)
+    return jobs[:limit]
+
+
 async def list_running_jobs_older_than(seconds: int) -> list[Job]:
     """Scan for RUNNING jobs older than `seconds` — used for timeout recovery."""
     cutoff = (
