@@ -182,6 +182,53 @@ def test_e2e_generation():
 # all requests pass through — we verify no false 401s.
 # ---------------------------------------------------------------------------
 
+def test_list_jobs_empty_or_list():
+    """GET /jobs returns a list (may be empty if no jobs exist)."""
+    r = httpx.get(f"{BASE_URL}/jobs", timeout=10)
+    assert r.status_code == 200
+    assert isinstance(r.json(), list)
+
+
+def test_list_jobs_status_filter():
+    """GET /jobs?status=COMPLETED returns only COMPLETED jobs (or empty list)."""
+    # Submit a job so there's at least something in the table
+    r = httpx.post(
+        f"{BASE_URL}/jobs",
+        json={"workflow_id": "txt2img-sdxl", "params": {"positive_prompt": "test", "checkpoint": "dummy.safetensors"}},
+        timeout=10,
+    )
+    # 422 / 503 acceptable — we just need the list endpoint to filter correctly
+    r = httpx.get(f"{BASE_URL}/jobs?status=COMPLETED", timeout=10)
+    assert r.status_code == 200
+    jobs = r.json()
+    assert isinstance(jobs, list)
+    for job in jobs:
+        assert job["status"] == "COMPLETED"
+
+
+def test_cancel_job_not_found():
+    """DELETE /jobs/<unknown-id> returns 404."""
+    r = httpx.delete(f"{BASE_URL}/jobs/00000000-0000-0000-0000-000000000000", timeout=10)
+    assert r.status_code == 404
+
+
+def test_cancel_job_transitions_to_cancelled():
+    """Submit a job then immediately cancel it — status should be CANCELLED."""
+    submit = httpx.post(
+        f"{BASE_URL}/jobs",
+        json={"workflow_id": "txt2img-sdxl", "params": {"positive_prompt": "cancel me", "checkpoint": "dummy.safetensors"}},
+        timeout=10,
+    )
+    # May fail validation (404 workflow or 422) — skip if so
+    if submit.status_code not in (202, 200):
+        pytest.skip(f"Job submit returned {submit.status_code} — skipping cancel test")
+
+    job_id = submit.json()["id"]
+    cancel = httpx.delete(f"{BASE_URL}/jobs/{job_id}", timeout=10)
+    assert cancel.status_code == 200
+    assert cancel.json()["status"] == "CANCELLED"
+
+
 def test_auth_health_always_accessible():
     """GET /health must return 200 regardless of auth config."""
     r = httpx.get(f"{BASE_URL}/health", timeout=10)
