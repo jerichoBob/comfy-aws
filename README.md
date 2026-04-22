@@ -278,9 +278,15 @@ See [`specs/README.md`](specs/README.md) for implementation status. v2–v5 comp
 
 ## Changelog
 
-0.8.0
+0.9.0
 
 ### Release Notes
+
+#### v0.9.0 (2026-04-21)
+
+- feat(auth): implement Bearer Token Auth (v9) [`873ccb8`]
+- docs(.claude): add operator README for scripts and slash commands [`930ac6c`]
+- style: apply code formatter across frontend, infra, and docs [`6a67fa1`]
 
 #### v0.8.0 (2026-04-22)
 
