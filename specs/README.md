@@ -11,6 +11,10 @@
 | v5 | React Generation UI | 15/15 | ✅ Complete | — |
 | v6 | Image Lightbox | 8/8 | ✅ Complete | robert.w.seaton.jr@gmail.com |
 | v7 | Job Management | 13/13 | ✅ Complete | robert.w.seaton.jr@gmail.com |
+| v8 | img2img + AWS Ops Toolkit | 0/29 | 🔲 Pending | robert.w.seaton.jr@gmail.com |
+| v9 | Bearer Token Auth | 0/8 | 🔲 Pending | — |
+| v10 | Remote-First Deployment | 0/15 | 🔲 Pending | — |
+| v11 | Live Step Previews via SSE | 0/11 | 🔲 Pending | — |
 
 ---
 
