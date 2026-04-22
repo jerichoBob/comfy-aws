@@ -262,9 +262,14 @@ See [`specs/README.md`](specs/README.md) for implementation status. v2–v5 comp
 
 ## Changelog
 
-0.6.0
+0.7.0
 
 ### Release Notes
+
+#### v0.7.0 (2026-04-21)
+
+- feat: add img2img image upload pipeline [`627b8fc`]
+- docs: add v8-v11 specs for img2img, auth, remote frontend, SSE previews [`c35f811`]
 
 #### v0.6.0 (2026-04-01)
 
