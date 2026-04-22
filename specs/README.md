@@ -15,6 +15,7 @@
 | v9 | Bearer Token Auth | 0/8 | 🔲 Pending | — |
 | v10 | Remote-First Deployment | 0/15 | 🔲 Pending | — |
 | v11 | Live Step Previews via SSE | 0/11 | 🔲 Pending | — |
+| v12 | Model Download API | 0/13 | 🔲 Pending | — |
 
 ---
 

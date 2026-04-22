@@ -7,7 +7,7 @@
 #
 # Usage:
 #   bash .claude/scripts/revoke-output.sh <job_id>
-#   bash .claude/scripts/revoke-output.sh <job_id> --profile personal
+#   bash .claude/scripts/revoke-output.sh <job_id> --profile rwsjr-aws-new
 #
 # Prerequisites:
 #   - AWS CLI configured with appropriate credentials

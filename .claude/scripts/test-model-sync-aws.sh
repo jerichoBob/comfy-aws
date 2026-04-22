@@ -9,10 +9,10 @@
 #   4. Calls GET /models and verifies the checkpoint appears
 #
 # Required env vars (or set via ~/.comfy-aws.env):
-#   S3_BUCKET      — from CDK output ComfyAwsStack.BucketName
-#   ECS_CLUSTER    — from CDK output ComfyAwsStack.ClusterName
-#   ECS_SERVICE    — from CDK output ComfyAwsStack.ServiceName
-#   API_HOST       — public IP or hostname of the running ECS instance (port 8000)
+#   S3_BUCKET      — get from /cfn-status or aws cloudformation describe-stacks
+#   ECS_CLUSTER    — get from /cfn-status
+#   ECS_SERVICE    — get from /cfn-status
+#   API_HOST       — public IP of the running EC2 instance (aws ec2 describe-instances)
 
 set -euo pipefail
 
