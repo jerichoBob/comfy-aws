@@ -2,20 +2,20 @@
 
 ## Quick Status
 
-| Version | Name | Progress | Status | Owner |
-|---------|------|----------|--------|-------|
-| v1 | ComfyUI on AWS | 24/25 | 🔧 In Progress | robert.w.seaton.jr@gmail.com |
-| v2 | Local E2E Generation Test | 4/4 | ✅ Complete | robert.w.seaton.jr@gmail.com |
-| v3 | CloudFront Output Delivery | 11/11 | ✅ Complete | — |
-| v4 | API Key Authentication | 8/8 | ✅ Complete | — |
-| v5 | React Generation UI | 15/15 | ✅ Complete | — |
-| v6 | Image Lightbox | 8/8 | ✅ Complete | robert.w.seaton.jr@gmail.com |
-| v7 | Job Management | 13/13 | ✅ Complete | robert.w.seaton.jr@gmail.com |
-| v8 | img2img + AWS Ops Toolkit | 0/29 | 🔲 Pending | robert.w.seaton.jr@gmail.com |
-| v9 | Bearer Token Auth | 0/8 | 🔲 Pending | — |
-| v10 | Remote-First Deployment | 0/15 | 🔲 Pending | — |
-| v11 | Live Step Previews via SSE | 0/11 | 🔲 Pending | — |
-| v12 | Model Download API | 0/13 | 🔲 Pending | — |
+| Version | Name                       | Progress | Status         | Owner                        |
+| ------- | -------------------------- | -------- | -------------- | ---------------------------- |
+| v1      | ComfyUI on AWS             | 24/25    | 🔧 In Progress | robert.w.seaton.jr@gmail.com |
+| v2      | Local E2E Generation Test  | 4/4      | ✅ Complete    | robert.w.seaton.jr@gmail.com |
+| v3      | CloudFront Output Delivery | 11/11    | ✅ Complete    | —                            |
+| v4      | API Key Authentication     | 8/8      | ✅ Complete    | —                            |
+| v5      | React Generation UI        | 15/15    | ✅ Complete    | —                            |
+| v6      | Image Lightbox             | 8/8      | ✅ Complete    | robert.w.seaton.jr@gmail.com |
+| v7      | Job Management             | 13/13    | ✅ Complete    | robert.w.seaton.jr@gmail.com |
+| v8      | img2img + AWS Ops Toolkit  | 0/29     | 🔲 Pending     | robert.w.seaton.jr@gmail.com |
+| v9      | Bearer Token Auth          | 8/8      | ✅ Complete    | —                            |
+| v10     | Remote-First Deployment    | 0/15     | 🔲 Pending     | —                            |
+| v11     | Live Step Previews via SSE | 0/11     | 🔲 Pending     | —                            |
+| v12     | Model Download API         | 0/13     | 🔲 Pending     | —                            |
 
 ---
 
@@ -225,5 +225,29 @@
 
 - [x] Add `test_e2e_generation` to `api/tests/test_integration.py` — discovers checkpoint via `/object_info`, skips if none, submits with `steps=4, width=256, height=256`, polls to `COMPLETED`, verifies PNG bytes
 - [x] Run test with a real checkpoint and confirm it passes end-to-end
+
+---
+
+## v9: Bearer Token Auth
+
+**Spec**: [spec-v9-bearer-auth.md](spec-v9-bearer-auth.md)
+
+### Phase 1: Middleware Update
+
+- [x] Add `_extract_key()` to `ApiKeyMiddleware` — checks `Authorization: Bearer` first, falls back to `X-API-Key`
+- [x] Reject 401 when `Authorization` header present with non-Bearer scheme and no `X-API-Key` fallback
+- [x] Replace inline key extraction with `_extract_key()` call in `dispatch()`
+
+### Phase 2: Frontend Update
+
+- [x] Update `apiFetch()` in `hooks/useApi.ts` to send `Authorization: Bearer <key>` instead of `X-API-Key`
+
+### Phase 3: Tests
+
+- [x] `test_bearer_valid_key` — `Authorization: Bearer <key>` → 200
+- [x] `test_bearer_invalid_key` — `Authorization: Bearer wrong` → 401
+- [x] `test_bearer_wrong_scheme` — `Authorization: Basic <key>` → 401
+- [x] `test_x_api_key_still_works` — existing `X-API-Key` header → 200 (regression)
+- [x] `test_bearer_disabled_auth` — Bearer token with `API_KEYS=""` → 200
 
 ---

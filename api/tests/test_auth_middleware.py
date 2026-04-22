@@ -81,3 +81,39 @@ def test_multiple_keys_each_accepted(monkeypatch):
     for key in ("key-one", "key-two", "key-three"):
         resp = client.get("/jobs", headers={"X-API-Key": key})
         assert resp.status_code == 200, f"Key {key!r} was rejected"
+
+
+def test_bearer_valid_key(monkeypatch):
+    monkeypatch.setenv("API_KEYS", "secret123")
+    client = TestClient(_make_app("secret123"))
+    resp = client.get("/jobs", headers={"Authorization": "Bearer secret123"})
+    assert resp.status_code == 200
+
+
+def test_bearer_invalid_key(monkeypatch):
+    monkeypatch.setenv("API_KEYS", "secret123")
+    client = TestClient(_make_app("secret123"))
+    resp = client.get("/jobs", headers={"Authorization": "Bearer wrongkey"})
+    assert resp.status_code == 401
+
+
+def test_bearer_wrong_scheme(monkeypatch):
+    monkeypatch.setenv("API_KEYS", "secret123")
+    client = TestClient(_make_app("secret123"))
+    resp = client.get("/jobs", headers={"Authorization": "Basic secret123"})
+    assert resp.status_code == 401
+
+
+def test_x_api_key_still_works(monkeypatch):
+    """X-API-Key header remains accepted for backwards compatibility."""
+    monkeypatch.setenv("API_KEYS", "secret123")
+    client = TestClient(_make_app("secret123"))
+    resp = client.get("/jobs", headers={"X-API-Key": "secret123"})
+    assert resp.status_code == 200
+
+
+def test_bearer_disabled_auth(monkeypatch):
+    monkeypatch.setenv("API_KEYS", "")
+    client = TestClient(_make_app(""))
+    resp = client.get("/jobs", headers={"Authorization": "Bearer anytoken"})
+    assert resp.status_code == 200

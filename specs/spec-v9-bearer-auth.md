@@ -2,7 +2,7 @@
 version: 9
 name: bearer-auth
 display_name: "Bearer Token Auth"
-status: pending
+status: complete
 created: 2026-04-21
 depends_on: [4]
 tags: [api, security]
@@ -100,6 +100,6 @@ Add to `api/tests/test_auth_middleware.py`:
 
 ## Changelog
 
-| Date | Change |
-|------|--------|
+| Date       | Change        |
+| ---------- | ------------- |
 | 2026-04-21 | Initial draft |
