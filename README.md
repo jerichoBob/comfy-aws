@@ -262,9 +262,13 @@ See [`specs/README.md`](specs/README.md) for implementation status. v2–v5 comp
 
 ## Changelog
 
-0.7.1
+0.8.0
 
 ### Release Notes
+
+#### v0.8.0 (2026-04-22)
+
+- feat: add sync-to-aws.sh, model download API spec (v12), update aws profile [`a86f828`]
 
 #### v0.7.1 (2026-04-21)
 
