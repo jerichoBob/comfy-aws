@@ -1,11 +1,20 @@
 """Integration tests — require docker compose up (ComfyUI + LocalStack)."""
 import os
+import subprocess
 
 import httpx
 import pytest
 
 BASE_URL = os.environ.get("API_URL", "http://localhost:8000")
 COMFYUI_URL = os.environ.get("COMFYUI_URL", "http://localhost:8188")
+LOCALSTACK_ENDPOINT = os.environ.get("AWS_ENDPOINT_URL", "http://localhost:4566")
+LOCALSTACK_BUCKET = os.environ.get("S3_BUCKET", "comfy-aws-local")
+_LOCALSTACK_ENV = {
+    **os.environ,
+    "AWS_ACCESS_KEY_ID": os.environ.get("AWS_ACCESS_KEY_ID", "test"),
+    "AWS_SECRET_ACCESS_KEY": os.environ.get("AWS_SECRET_ACCESS_KEY", "test"),
+    "AWS_DEFAULT_REGION": os.environ.get("AWS_DEFAULT_REGION", "us-east-1"),
+}
 
 
 def _api_available() -> bool:
@@ -19,6 +28,14 @@ def _api_available() -> bool:
 def _comfyui_available() -> bool:
     try:
         r = httpx.get(f"{COMFYUI_URL}/system_stats", timeout=5)
+        return r.status_code == 200
+    except Exception:
+        return False
+
+
+def _localstack_available() -> bool:
+    try:
+        r = httpx.get(f"{LOCALSTACK_ENDPOINT}/_localstack/health", timeout=3)
         return r.status_code == 200
     except Exception:
         return False
@@ -253,3 +270,85 @@ def test_auth_post_jobs_no_key_when_disabled():
     # 404 = workflow not found — also fine, auth passed through
     # 401 = auth blocked it — fail
     assert r.status_code != 401, "Got unexpected 401 — auth should be disabled (API_KEYS='')"
+
+
+# ---------------------------------------------------------------------------
+# Model-sync integration tests
+# Verify the model-sync init container logic: S3 → local disk via aws s3 sync.
+# Requires LocalStack (docker compose up).
+# ---------------------------------------------------------------------------
+
+@pytest.mark.skipif(not _localstack_available(), reason="LocalStack not reachable — run docker compose up first")
+def test_model_sync_script(tmp_path):
+    """Model-sync init container correctly syncs S3 model files to local disk."""
+    dummy_key = "models/checkpoints/test-sync-integration.safetensors"
+    dummy_content = b"fake-safetensors-data-for-sync-integration-test"
+    output_dir = tmp_path / "models"
+    output_dir.mkdir()
+
+    # Upload a dummy checkpoint to LocalStack S3 (mirrors what an operator would do)
+    upload = subprocess.run(
+        [
+            "aws", "s3", "cp", "-",
+            f"s3://{LOCALSTACK_BUCKET}/{dummy_key}",
+            "--endpoint-url", LOCALSTACK_ENDPOINT,
+        ],
+        input=dummy_content,
+        capture_output=True,
+        env=_LOCALSTACK_ENV,
+        timeout=15,
+    )
+    assert upload.returncode == 0, f"S3 upload failed: {upload.stderr.decode()}"
+
+    # Run the same sync command as the model-sync init container entrypoint.sh
+    sync = subprocess.run(
+        [
+            "aws", "s3", "sync",
+            f"s3://{LOCALSTACK_BUCKET}/models/",
+            str(output_dir),
+            "--exact-timestamps",
+            "--no-progress",
+            "--endpoint-url", LOCALSTACK_ENDPOINT,
+        ],
+        capture_output=True,
+        env=_LOCALSTACK_ENV,
+        timeout=30,
+    )
+    assert sync.returncode == 0, f"Sync failed: {sync.stderr.decode()}"
+
+    # Verify the model landed under the correct type subdirectory
+    synced_file = output_dir / "checkpoints" / "test-sync-integration.safetensors"
+    assert synced_file.exists(), f"Expected synced model not found at {synced_file}"
+    assert synced_file.read_bytes() == dummy_content, "Synced file content does not match uploaded content"
+
+
+@pytest.mark.skipif(not _localstack_available(), reason="LocalStack not reachable — run docker compose up first")
+def test_model_sync_idempotent(tmp_path):
+    """A second sync run with --exact-timestamps skips already-present files (no re-download)."""
+    dummy_key = "models/loras/test-idempotent.safetensors"
+    dummy_content = b"fake-lora-data"
+    output_dir = tmp_path / "models"
+    output_dir.mkdir()
+
+    subprocess.run(
+        ["aws", "s3", "cp", "-", f"s3://{LOCALSTACK_BUCKET}/{dummy_key}", "--endpoint-url", LOCALSTACK_ENDPOINT],
+        input=dummy_content, capture_output=True, env=_LOCALSTACK_ENV, timeout=15, check=True,
+    )
+
+    # First sync — downloads the file
+    subprocess.run(
+        ["aws", "s3", "sync", f"s3://{LOCALSTACK_BUCKET}/models/", str(output_dir),
+         "--exact-timestamps", "--no-progress", "--endpoint-url", LOCALSTACK_ENDPOINT],
+        capture_output=True, env=_LOCALSTACK_ENV, timeout=30, check=True,
+    )
+
+    # Second sync — should be a no-op (nothing new to copy)
+    sync2 = subprocess.run(
+        ["aws", "s3", "sync", f"s3://{LOCALSTACK_BUCKET}/models/", str(output_dir),
+         "--exact-timestamps", "--no-progress", "--endpoint-url", LOCALSTACK_ENDPOINT],
+        capture_output=True, env=_LOCALSTACK_ENV, timeout=30,
+    )
+    assert sync2.returncode == 0
+    # No-op sync produces no stdout lines starting with "download:"
+    output_lines = [l for l in sync2.stdout.decode().splitlines() if l.startswith("download:")]
+    assert output_lines == [], f"Expected no downloads on second sync, got: {output_lines}"

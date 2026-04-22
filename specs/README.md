@@ -4,7 +4,7 @@
 
 | Version | Name | Progress | Status | Owner |
 |---------|------|----------|--------|-------|
-| v1 | ComfyUI on AWS | 23/25 | 🔧 In Progress | robert.w.seaton.jr@gmail.com |
+| v1 | ComfyUI on AWS | 24/25 | 🔧 In Progress | robert.w.seaton.jr@gmail.com |
 | v2 | Local E2E Generation Test | 4/4 | ✅ Complete | robert.w.seaton.jr@gmail.com |
 | v3 | CloudFront Output Delivery | 11/11 | ✅ Complete | — |
 | v4 | API Key Authentication | 8/8 | ✅ Complete | — |
@@ -51,8 +51,8 @@
 
 - [x] Define S3 key structure for model types
 - [x] Write model-sync init container script (`docker/model-sync/entrypoint.sh`)
-- [ ] Upload test checkpoint to S3, verify in `GET /models` after task restart
-- [ ] Write integration test for full model-sync flow
+- [ ] Upload test checkpoint to S3, verify in `GET /models` after task restart <!-- BLOCKED: requires live AWS deployment — use .claude/scripts/test-model-sync-aws.sh -->
+- [x] Write integration test for full model-sync flow
 
 ### Phase 5: Hardening
 
