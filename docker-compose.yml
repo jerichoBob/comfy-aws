@@ -54,7 +54,13 @@ services:
       - ./models:/app/models
       - comfyui-output:/app/output
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8188/system_stats')"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8188/system_stats')",
+        ]
       interval: 10s
       timeout: 10s
       retries: 30
@@ -80,10 +86,19 @@ services:
       - AWS_ENDPOINT_URL=http://localstack:4566
       - PRESIGNED_URL_ENDPOINT=http://localhost:4566
       - JOB_TIMEOUT_SECONDS=900
-      - API_KEYS=  # Empty = auth disabled for local dev
+      - API_KEYS= # Empty = auth disabled for local dev
     volumes:
       - ./api:/app
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    command:
+      [
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--reload",
+      ]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 5s

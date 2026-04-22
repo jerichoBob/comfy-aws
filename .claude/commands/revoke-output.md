@@ -24,6 +24,7 @@ export CLOUDFRONT_DISTRIBUTION_ID=<your-distribution-id>
 ```
 
 Find the distribution ID:
+
 ```bash
 aws cloudfront list-distributions \
   --query 'DistributionList.Items[*].[Id,DomainName]' \

@@ -38,7 +38,9 @@ export class CdnConstruct extends Construct {
     // Distribution: outputs/* only, signed URLs required
     this.distribution = new cloudfront.Distribution(this, "Distribution", {
       defaultBehavior: {
-        origin: origins.S3BucketOrigin.withOriginAccessControl(props.bucket, { originAccessControl: oac }),
+        origin: origins.S3BucketOrigin.withOriginAccessControl(props.bucket, {
+          originAccessControl: oac,
+        }),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         trustedKeyGroups: [keyGroup],
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
@@ -59,7 +61,7 @@ export class CdnConstruct extends Construct {
             "aws:SourceArn": `arn:aws:cloudfront::${cdk.Stack.of(this).account}:distribution/${this.distribution.distributionId}`,
           },
         },
-      })
+      }),
     );
 
     // Store private key PEM in SSM for the API to fetch at startup

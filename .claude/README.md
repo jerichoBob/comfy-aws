@@ -104,13 +104,13 @@ Requires `S3_BUCKET`, `ECS_CLUSTER`, `ECS_SERVICE`, and `API_HOST` in `~/.comfy-
 
 Run these inside Claude Code (prefix with `/`).
 
-| Command | What it does |
-|---------|-------------|
-| `/cfn-deploy` | Run CDK deploy, stream output, show final stack status |
-| `/cfn-status` | Show stack status + last 10 events with interpreted advice |
-| `/cfn-watch` | Poll stack every 15s until stable — use while a deploy is running |
-| `/cfn-events [N]` | Show last N CloudFormation events (default 30) |
-| `/revoke-output` | Delete S3 outputs + CloudFront invalidation for a job ID |
+| Command           | What it does                                                      |
+| ----------------- | ----------------------------------------------------------------- |
+| `/cfn-deploy`     | Run CDK deploy, stream output, show final stack status            |
+| `/cfn-status`     | Show stack status + last 10 events with interpreted advice        |
+| `/cfn-watch`      | Poll stack every 15s until stable — use while a deploy is running |
+| `/cfn-events [N]` | Show last N CloudFormation events (default 30)                    |
+| `/revoke-output`  | Delete S3 outputs + CloudFront invalidation for a job ID          |
 
 ---
 

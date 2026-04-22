@@ -1,8 +1,8 @@
-import { AlertCircle, RotateCcw } from 'lucide-react'
+import { AlertCircle, RotateCcw } from "lucide-react";
 
 interface Props {
-  message: string
-  onReset: () => void
+  message: string;
+  onReset: () => void;
 }
 
 export function ErrorBanner({ message, onReset }: Props) {
@@ -22,5 +22,5 @@ export function ErrorBanner({ message, onReset }: Props) {
         Try again
       </button>
     </div>
-  )
+  );
 }

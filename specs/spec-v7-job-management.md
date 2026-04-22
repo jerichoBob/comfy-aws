@@ -100,11 +100,11 @@ tags: [frontend, api, ui]
 
 ### Risks & Mitigations
 
-| Risk | Mitigation |
-|------|------------|
-| Interrupt races: ComfyUI finishes before cancel arrives | Status check after interrupt; if already COMPLETED, leave as-is |
-| Multiple users: cancel affects shared ComfyUI queue | Single-user deployment assumption; revisit if multi-tenant needed |
-| GSI eventually consistent | Acceptable for a polling UI — stale by at most one poll cycle |
+| Risk                                                    | Mitigation                                                        |
+| ------------------------------------------------------- | ----------------------------------------------------------------- |
+| Interrupt races: ComfyUI finishes before cancel arrives | Status check after interrupt; if already COMPLETED, leave as-is   |
+| Multiple users: cancel affects shared ComfyUI queue     | Single-user deployment assumption; revisit if multi-tenant needed |
+| GSI eventually consistent                               | Acceptable for a polling UI — stale by at most one poll cycle     |
 
 ---
 
@@ -120,6 +120,6 @@ tags: [frontend, api, ui]
 
 ## Changelog
 
-| Date | Change |
-|------|--------|
+| Date       | Change        |
+| ---------- | ------------- |
 | 2026-03-28 | Initial draft |

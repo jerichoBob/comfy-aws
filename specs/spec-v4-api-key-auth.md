@@ -57,11 +57,13 @@ tags: [security, fastapi, middleware, auth]
 ### Phase 1: Middleware Implementation
 
 **Task 1.1 — Config: add `API_KEYS` to `config.py`**
+
 - Add `api_keys: str = ""` to `Settings`
 - Add helper property `api_key_set: set[str]` that splits on `,`, strips whitespace, and filters empty strings
 - Auth is disabled when `api_key_set` is empty
 
 **Task 1.2 — Middleware: implement `ApiKeyMiddleware` in `api/app/middleware/auth.py`**
+
 - Starlette `BaseHTTPMiddleware` subclass
 - Skip auth (call next) if:
   - `settings.api_key_set` is empty, OR
@@ -70,9 +72,11 @@ tags: [security, fastapi, middleware, auth]
 - On success, log `INFO auth key_prefix=%s`, `key[:8]`
 
 **Task 1.3 — Wire middleware into `main.py`**
+
 - `app.add_middleware(ApiKeyMiddleware)` after app creation, before router inclusion
 
 **Task 1.4 — Unit tests: `api/tests/test_auth_middleware.py`**
+
 - Use FastAPI `TestClient` with a minimal test app (no mocks — real middleware, real settings override via env)
 - Test: no key, auth enabled → 401
 - Test: wrong key, auth enabled → 401
@@ -82,6 +86,7 @@ tags: [security, fastapi, middleware, auth]
 - Test: multiple keys, each accepted independently
 
 **Task 1.5 — Integration test: auth behavior against running stack**
+
 - Add `test_auth` cases to `api/tests/test_integration.py`
 - `POST /jobs` without key (when `API_KEYS` set in env) → 401
 - `POST /jobs` with valid key → not 401 (job created or 422 from missing body — not an auth failure)
@@ -90,14 +95,17 @@ tags: [security, fastapi, middleware, auth]
 ### Phase 2: Docker + Deployment Wiring
 
 **Task 2.1 — `docker-compose.yml`: add `API_KEYS` env var (empty default)**
+
 - Under `api` service `environment:`, add `API_KEYS: ""` with a comment noting auth is disabled in local dev
 
 **Task 2.2 — ECS task definition: pass `API_KEYS` from SSM or env**
+
 - In `infra/lib/constructs/service.ts`, add `API_KEYS` to the `api` container environment
 - Source from SSM Parameter Store at `/comfy-aws/api-keys` (operator sets this before deploy)
 - Document the SSM path in the deployment runbook
 
 **Task 2.3 — Update `CLAUDE.md` environment variable table**
+
 - Add `API_KEYS` row: default `""`, description "Comma-separated valid API keys; empty disables auth"
 
 ---
@@ -114,16 +122,16 @@ tags: [security, fastapi, middleware, auth]
 
 ### Key File Paths
 
-| File | Change |
-|------|--------|
-| `api/app/config.py` | Add `api_keys: str = ""`, `api_key_set` property |
-| `api/app/middleware/__init__.py` | New package |
-| `api/app/middleware/auth.py` | New: `ApiKeyMiddleware` implementation |
-| `api/app/main.py` | `app.add_middleware(ApiKeyMiddleware)` |
-| `api/tests/test_auth_middleware.py` | New: unit tests for middleware |
-| `api/tests/test_integration.py` | Add auth integration test cases |
-| `docker-compose.yml` | Add `API_KEYS: ""` to `api` service env |
-| `infra/lib/constructs/service.ts` | Pass `API_KEYS` from SSM to `api` container |
+| File                                | Change                                           |
+| ----------------------------------- | ------------------------------------------------ |
+| `api/app/config.py`                 | Add `api_keys: str = ""`, `api_key_set` property |
+| `api/app/middleware/__init__.py`    | New package                                      |
+| `api/app/middleware/auth.py`        | New: `ApiKeyMiddleware` implementation           |
+| `api/app/main.py`                   | `app.add_middleware(ApiKeyMiddleware)`           |
+| `api/tests/test_auth_middleware.py` | New: unit tests for middleware                   |
+| `api/tests/test_integration.py`     | Add auth integration test cases                  |
+| `docker-compose.yml`                | Add `API_KEYS: ""` to `api` service env          |
+| `infra/lib/constructs/service.ts`   | Pass `API_KEYS` from SSM to `api` container      |
 
 ### Dependencies
 
@@ -132,18 +140,18 @@ tags: [security, fastapi, middleware, auth]
 
 ### Risks & Mitigations
 
-| Risk | Mitigation |
-|------|------------|
+| Risk                                             | Mitigation                                                                 |
+| ------------------------------------------------ | -------------------------------------------------------------------------- |
 | New route added without realizing it's protected | Middleware is global — protection is automatic; document this in CLAUDE.md |
-| `API_KEYS` accidentally committed to git | Set via SSM in AWS, via `.env` (gitignored) locally; never hardcoded |
-| ALB health check blocked by auth | `/health` is unconditionally exempt in middleware |
-| Key leaked in logs if prefix is too long | 8-char prefix is short enough to be non-exploitable |
-| Middleware performance overhead | Header lookup is O(1) set membership; negligible at any realistic RPS |
+| `API_KEYS` accidentally committed to git         | Set via SSM in AWS, via `.env` (gitignored) locally; never hardcoded       |
+| ALB health check blocked by auth                 | `/health` is unconditionally exempt in middleware                          |
+| Key leaked in logs if prefix is too long         | 8-char prefix is short enough to be non-exploitable                        |
+| Middleware performance overhead                  | Header lookup is O(1) set membership; negligible at any realistic RPS      |
 
 ---
 
 ## Changelog
 
-| Date | Change |
-|------|--------|
+| Date       | Change        |
+| ---------- | ------------- |
 | 2026-03-27 | Initial draft |

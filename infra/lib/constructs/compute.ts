@@ -29,10 +29,10 @@ export class ComputeConstruct extends Construct {
       assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),
       managedPolicies: [
         iam.ManagedPolicy.fromAwsManagedPolicyName(
-          "service-role/AmazonEC2ContainerServiceforEC2Role"
+          "service-role/AmazonEC2ContainerServiceforEC2Role",
         ),
         iam.ManagedPolicy.fromAwsManagedPolicyName(
-          "AmazonSSMManagedInstanceCore"
+          "AmazonSSMManagedInstanceCore",
         ),
       ],
     });
@@ -42,13 +42,13 @@ export class ComputeConstruct extends Construct {
       new iam.PolicyStatement({
         actions: ["s3:GetObject", "s3:ListBucket"],
         resources: [props.s3BucketArn, `${props.s3BucketArn}/models/*`],
-      })
+      }),
     );
     this.instanceRole.addToPolicy(
       new iam.PolicyStatement({
         actions: ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"],
         resources: [`${props.s3BucketArn}/outputs/*`],
-      })
+      }),
     );
 
     // DynamoDB full access on the jobs table
@@ -56,7 +56,7 @@ export class ComputeConstruct extends Construct {
       new iam.PolicyStatement({
         actions: ["dynamodb:*"],
         resources: [props.dynamoTableArn, `${props.dynamoTableArn}/index/*`],
-      })
+      }),
     );
 
     // User data: format + mount 200GB EBS data volume at /data
@@ -69,21 +69,19 @@ export class ComputeConstruct extends Construct {
       "DATA_DEV=$([ -b /dev/nvme1n1 ] && echo /dev/nvme1n1 || echo /dev/xvdb)",
       "if ! blkid $DATA_DEV; then mkfs -t xfs $DATA_DEV; fi",
       "mkdir -p /data/models/checkpoints /data/models/loras /data/models/vaes",
-      "grep -q /data /etc/fstab || echo \"$DATA_DEV /data xfs defaults,nofail 0 2\" >> /etc/fstab",
+      'grep -q /data /etc/fstab || echo "$DATA_DEV /data xfs defaults,nofail 0 2" >> /etc/fstab',
       "mount -a || true",
       // ECS config
       `echo ECS_CLUSTER=comfy-aws >> /etc/ecs/ecs.config`,
-      "echo ECS_ENABLE_SPOT_INSTANCE_DRAINING=true >> /etc/ecs/ecs.config"
+      "echo ECS_ENABLE_SPOT_INSTANCE_DRAINING=true >> /etc/ecs/ecs.config",
     );
 
     const launchTemplate = new ec2.LaunchTemplate(this, "LaunchTemplate", {
       instanceType: ec2.InstanceType.of(
         ec2.InstanceClass.G4DN,
-        ec2.InstanceSize.XLARGE
+        ec2.InstanceSize.XLARGE,
       ),
-      machineImage: ecs.EcsOptimizedImage.amazonLinux2(
-        ecs.AmiHardwareType.GPU
-      ),
+      machineImage: ecs.EcsOptimizedImage.amazonLinux2(ecs.AmiHardwareType.GPU),
       userData,
       role: this.instanceRole,
       securityGroup: props.securityGroup,
@@ -128,7 +126,7 @@ export class ComputeConstruct extends Construct {
       {
         autoScalingGroup: asg,
         enableManagedTerminationProtection: false,
-      }
+      },
     );
     this.cluster.addAsgCapacityProvider(capacityProvider);
 

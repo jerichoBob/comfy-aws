@@ -94,6 +94,7 @@ And for progress:
 Parse both and yield them upstream. Keep `watch_execution()` as a generator so callers can choose to consume or ignore intermediate events — `_watch_job` in `job_service.py` ignores them (no change needed there).
 
 **TAESD prerequisite:** ComfyUI emits preview images only if `--preview-method taesd` (or `latent2rgb`) is passed at startup. Add this flag to:
+
 - `docker-compose.yml` comfyui command: `python main.py --listen 0.0.0.0 --port 8188 --preview-method taesd`
 - `infra/lib/constructs/service.ts` comfyui container command
 
@@ -109,6 +110,7 @@ _job_previews: dict[str, list[dict]] = {}
 In `_watch_job`, for each `preview` or `progress` event yielded by `watch_execution()`, append to `_job_previews[job_id]`. Clear the buffer when the job reaches a terminal state (after a short delay to allow in-flight SSE clients to drain).
 
 Expose two functions:
+
 - `get_preview_events(job_id) -> list[dict]` — current buffer
 - `subscribe_previews(job_id) -> AsyncGenerator` — yields events as they arrive (via `asyncio.Queue` per subscriber)
 
@@ -192,6 +194,7 @@ Refactor the job result display in `ResultPanel.tsx` and `hooks/useJob.ts`:
 ### TAESD vs latent2rgb
 
 ComfyUI supports two preview methods:
+
 - `latent2rgb` — fast approximation, no extra model, lower quality (color blobs)
 - `taesd` — requires the TAESD model files (automatically downloaded by ComfyUI on first use, ~10 MB), much better quality showing actual structure
 
@@ -204,6 +207,7 @@ Use `taesd`. It downloads automatically; no manual model management needed.
 ### SSE vs WebSocket for the client
 
 SSE (`EventSource`) is unidirectional (server → client), which is all we need here. It:
+
 - Works through HTTP proxies without special configuration
 - Auto-reconnects by default
 - Is trivial to implement server-side in FastAPI with `StreamingResponse`
@@ -229,6 +233,6 @@ TAESD previews are ~192×192 JPEG, ~5–15 KB each. At 30 steps, that's ~450 KB 
 
 ## Changelog
 
-| Date | Change |
-|------|--------|
+| Date       | Change        |
+| ---------- | ------------- |
 | 2026-04-21 | Initial draft |

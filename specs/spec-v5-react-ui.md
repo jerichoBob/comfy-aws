@@ -110,20 +110,20 @@ tags: [frontend, react, typescript, vite, ui]
 
 ### Key File Paths
 
-| Path | Purpose |
-|------|---------|
-| `frontend/vite.config.ts` | Proxy `/api` → `:8000`, build output to `dist/` |
-| `frontend/src/hooks/useApi.ts` | Models + workflows fetch, shared `apiFetch` wrapper |
-| `frontend/src/hooks/useJob.ts` | Job submission state machine + 2s polling |
-| `frontend/src/hooks/useJobHistory.ts` | localStorage-persisted job history, capped at 20 |
-| `frontend/src/components/Sidebar.tsx` | Checkpoint, workflow, sampler, scheduler selectors |
-| `frontend/src/components/PromptForm.tsx` | Positive + negative prompt textareas |
-| `frontend/src/components/SettingsPanel.tsx` | Steps, CFG, seed, width, height controls |
-| `frontend/src/components/ResultPanel.tsx` | Image display, metadata, download button |
-| `frontend/src/components/JobHistory.tsx` | Recent jobs list with thumbnails and badges |
-| `frontend/src/components/ConnectionStatus.tsx` | Health poll, green/red indicator |
-| `frontend/src/components/ApiKeyInput.tsx` | API key popover, localStorage persistence |
-| `api/app/main.py` | Mount `StaticFiles("frontend/dist")` at `/ui` |
+| Path                                           | Purpose                                             |
+| ---------------------------------------------- | --------------------------------------------------- |
+| `frontend/vite.config.ts`                      | Proxy `/api` → `:8000`, build output to `dist/`     |
+| `frontend/src/hooks/useApi.ts`                 | Models + workflows fetch, shared `apiFetch` wrapper |
+| `frontend/src/hooks/useJob.ts`                 | Job submission state machine + 2s polling           |
+| `frontend/src/hooks/useJobHistory.ts`          | localStorage-persisted job history, capped at 20    |
+| `frontend/src/components/Sidebar.tsx`          | Checkpoint, workflow, sampler, scheduler selectors  |
+| `frontend/src/components/PromptForm.tsx`       | Positive + negative prompt textareas                |
+| `frontend/src/components/SettingsPanel.tsx`    | Steps, CFG, seed, width, height controls            |
+| `frontend/src/components/ResultPanel.tsx`      | Image display, metadata, download button            |
+| `frontend/src/components/JobHistory.tsx`       | Recent jobs list with thumbnails and badges         |
+| `frontend/src/components/ConnectionStatus.tsx` | Health poll, green/red indicator                    |
+| `frontend/src/components/ApiKeyInput.tsx`      | API key popover, localStorage persistence           |
+| `api/app/main.py`                              | Mount `StaticFiles("frontend/dist")` at `/ui`       |
 
 ### Local Dev Workflow
 
@@ -153,18 +153,18 @@ The UI should feel like a professional creative tool, not a demo page. Specifics
 
 ### Risks & Mitigations
 
-| Risk | Mitigation |
-|------|------------|
-| CORS error in local dev if proxy misconfigured | All API calls go through `/api` prefix; Vite proxy eliminates CORS; no `localhost:8000` direct calls in source |
-| FastAPI `StaticFiles` conflicts with existing routes | Mount at `/ui` after all API routes are registered; `GET /` remains the API root |
-| Job history thumbnails link to expired presigned URLs (v1) | Use CloudFront URLs (v3) for durable thumbnails; in local dev, refetch on click |
-| API key visible in DevTools localStorage | Acceptable for self-hosted single-user; document the risk; do not log the header server-side |
-| `npm run build` must run before FastAPI can serve `/ui` | Add `build:ui` to a top-level `Makefile` or `docker-compose build` step; document in README |
+| Risk                                                       | Mitigation                                                                                                     |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| CORS error in local dev if proxy misconfigured             | All API calls go through `/api` prefix; Vite proxy eliminates CORS; no `localhost:8000` direct calls in source |
+| FastAPI `StaticFiles` conflicts with existing routes       | Mount at `/ui` after all API routes are registered; `GET /` remains the API root                               |
+| Job history thumbnails link to expired presigned URLs (v1) | Use CloudFront URLs (v3) for durable thumbnails; in local dev, refetch on click                                |
+| API key visible in DevTools localStorage                   | Acceptable for self-hosted single-user; document the risk; do not log the header server-side                   |
+| `npm run build` must run before FastAPI can serve `/ui`    | Add `build:ui` to a top-level `Makefile` or `docker-compose build` step; document in README                    |
 
 ---
 
 ## Changelog
 
-| Date | Change |
-|------|--------|
+| Date       | Change        |
+| ---------- | ------------- |
 | 2026-03-27 | Initial draft |

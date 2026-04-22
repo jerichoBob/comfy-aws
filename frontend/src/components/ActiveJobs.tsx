@@ -1,30 +1,36 @@
-import { useEffect, useState } from 'react'
-import { X } from 'lucide-react'
-import type { Job } from '../hooks/useJob'
+import { useEffect, useState } from "react";
+import { X } from "lucide-react";
+import type { Job } from "../hooks/useJob";
 
 interface Props {
-  jobs: Job[]
-  onCancel: (jobId: string) => void
+  jobs: Job[];
+  onCancel: (jobId: string) => void;
 }
 
 function useElapsed(createdAt: string): string {
-  const [elapsed, setElapsed] = useState(0)
+  const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
-    const start = new Date(createdAt).getTime()
-    const tick = () => setElapsed(Math.floor((Date.now() - start) / 1000))
-    tick()
-    const id = setInterval(tick, 1000)
-    return () => clearInterval(id)
-  }, [createdAt])
+    const start = new Date(createdAt).getTime();
+    const tick = () => setElapsed(Math.floor((Date.now() - start) / 1000));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [createdAt]);
 
-  if (elapsed < 60) return `${elapsed}s`
-  return `${Math.floor(elapsed / 60)}m ${elapsed % 60}s`
+  if (elapsed < 60) return `${elapsed}s`;
+  return `${Math.floor(elapsed / 60)}m ${elapsed % 60}s`;
 }
 
-function ActiveJobRow({ job, onCancel }: { job: Job; onCancel: (id: string) => void }) {
-  const elapsed = useElapsed(job.created_at as unknown as string)
-  const prompt = String(job.params.positive_prompt ?? job.id)
+function ActiveJobRow({
+  job,
+  onCancel,
+}: {
+  job: Job;
+  onCancel: (id: string) => void;
+}) {
+  const elapsed = useElapsed(job.created_at as unknown as string);
+  const prompt = String(job.params.positive_prompt ?? job.id);
 
   return (
     <div className="flex items-center gap-2 px-4 py-2.5 border-b border-zinc-800/50">
@@ -41,11 +47,11 @@ function ActiveJobRow({ job, onCancel }: { job: Job; onCancel: (id: string) => v
         <X size={13} />
       </button>
     </div>
-  )
+  );
 }
 
 export function ActiveJobs({ jobs, onCancel }: Props) {
-  if (jobs.length === 0) return null
+  if (jobs.length === 0) return null;
 
   return (
     <div className="border-b border-zinc-800">
@@ -58,9 +64,9 @@ export function ActiveJobs({ jobs, onCancel }: Props) {
           Active ({jobs.length})
         </span>
       </div>
-      {jobs.map(job => (
+      {jobs.map((job) => (
         <ActiveJobRow key={job.id} job={job} onCancel={onCancel} />
       ))}
     </div>
-  )
+  );
 }

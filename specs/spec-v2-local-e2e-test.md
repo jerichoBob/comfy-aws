@@ -75,16 +75,16 @@ tags: [testing, local-dev, comfyui]
 
 ### Risks & Mitigations
 
-| Risk | Mitigation |
-|------|------------|
-| CPU generation exceeds 10-min timeout | Use `steps=4`, `width=256`, `height=256`; document expected time |
+| Risk                                                    | Mitigation                                                                          |
+| ------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| CPU generation exceeds 10-min timeout                   | Use `steps=4`, `width=256`, `height=256`; document expected time                    |
 | LocalStack presigned URLs don't return real image bytes | Fetch the URL and check PNG magic bytes — will catch if S3 upload/presign is broken |
-| ComfyUI object_info schema changes | Pin ComfyUI version in Dockerfile |
+| ComfyUI object_info schema changes                      | Pin ComfyUI version in Dockerfile                                                   |
 
 ---
 
 ## Changelog
 
-| Date | Change |
-|------|--------|
+| Date       | Change        |
+| ---------- | ------------- |
 | 2026-03-26 | Initial draft |

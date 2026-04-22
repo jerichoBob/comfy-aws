@@ -37,7 +37,7 @@ export class NetworkConstruct extends Construct {
     this.ecsSecurityGroup.addIngressRule(
       ec2.Peer.anyIpv4(),
       ec2.Port.tcp(8000),
-      "Allow API from internet"
+      "Allow API from internet",
     );
     // ComfyUI port 8188 is intentionally NOT opened — sidecar on localhost only
 

@@ -122,6 +122,7 @@ Exit codes: 0 = success, 1 = job failed, 2 = timeout, 3 = auth error
 ```
 
 Implementation:
+
 - Pure bash + `curl` + `jq` (both available on macOS by default)
 - `POST /jobs` with JSON body built from `--param` flags
 - Polls `GET /jobs/{id}` every `--poll-interval` seconds until `COMPLETED` or `FAILED`
@@ -134,18 +135,18 @@ In `infra/lib/constructs/network.ts` (or wherever the API security group is defi
 
 - Add a CDK context variable `allowedCidr` (default `0.0.0.0/0`):
   ```ts
-  const allowedCidr = this.node.tryGetContext('allowedCidr') ?? '0.0.0.0/0';
-  apiSg.addIngressRule(Peer.ipv4(allowedCidr), Port.tcp(8000), 'API access');
+  const allowedCidr = this.node.tryGetContext("allowedCidr") ?? "0.0.0.0/0";
+  apiSg.addIngressRule(Peer.ipv4(allowedCidr), Port.tcp(8000), "API access");
   ```
 - Deploy with `-c allowedCidr=$(curl -s https://checkip.amazonaws.com)/32` to lock to your current IP
 
 In `infra/lib/comfy-aws-stack.ts`, add `CfnOutput` entries:
 
 ```ts
-new CfnOutput(this, 'ClusterName',  { value: compute.cluster.clusterName });
-new CfnOutput(this, 'ServiceName',  { value: service.ecsService.serviceName });
-new CfnOutput(this, 'BucketName',   { value: storage.bucket.bucketName });
-new CfnOutput(this, 'TableName',    { value: storage.table.tableName });
+new CfnOutput(this, "ClusterName", { value: compute.cluster.clusterName });
+new CfnOutput(this, "ServiceName", { value: service.ecsService.serviceName });
+new CfnOutput(this, "BucketName", { value: storage.bucket.bucketName });
+new CfnOutput(this, "TableName", { value: storage.table.tableName });
 ```
 
 These are consumed by `manage.sh` (v8) via `aws cloudformation describe-stacks`.
@@ -188,6 +189,6 @@ When `apiUrl` is empty in localStorage, `apiFetch()` sends requests to `/api/...
 
 ## Changelog
 
-| Date | Change |
-|------|--------|
+| Date       | Change        |
+| ---------- | ------------- |
 | 2026-04-21 | Initial draft |

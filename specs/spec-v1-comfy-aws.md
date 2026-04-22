@@ -130,13 +130,13 @@ tags: [aws, comfyui, fastapi, ecs, cdk, image-generation]
 
 ### Risks & Mitigations
 
-| Risk | Mitigation |
-|------|------------|
-| Spot instance interruption mid-job | 2-min drain window; jobs are short (5-30s); retry logic in client |
-| API sidecar crash leaves job in RUNNING state | DynamoDB TTL on RUNNING state + recovery on next job_service startup |
-| ComfyUI takes 60-120s to load models | ALB health check targets `/health` which only returns 200 when ComfyUI's `/system_stats` responds |
-| Large model S3 sync on every task start | `--exact-timestamps` flag skips files already present on EBS |
-| g4dn.xlarge insufficient VRAM for large models | Upgrade to g5.xlarge (A10G, 24GB) by changing single CDK parameter |
+| Risk                                           | Mitigation                                                                                        |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Spot instance interruption mid-job             | 2-min drain window; jobs are short (5-30s); retry logic in client                                 |
+| API sidecar crash leaves job in RUNNING state  | DynamoDB TTL on RUNNING state + recovery on next job_service startup                              |
+| ComfyUI takes 60-120s to load models           | ALB health check targets `/health` which only returns 200 when ComfyUI's `/system_stats` responds |
+| Large model S3 sync on every task start        | `--exact-timestamps` flag skips files already present on EBS                                      |
+| g4dn.xlarge insufficient VRAM for large models | Upgrade to g5.xlarge (A10G, 24GB) by changing single CDK parameter                                |
 
 ---
 
@@ -150,6 +150,6 @@ tags: [aws, comfyui, fastapi, ecs, cdk, image-generation]
 
 ## Changelog
 
-| Date | Change |
-|------|--------|
+| Date       | Change        |
+| ---------- | ------------- |
 | 2026-03-24 | Initial draft |

@@ -27,7 +27,6 @@ export interface ServiceConstructProps {
 }
 
 export class ServiceConstruct extends Construct {
-
   constructor(scope: Construct, id: string, props: ServiceConstructProps) {
     super(scope, id);
 
@@ -50,7 +49,7 @@ export class ServiceConstruct extends Construct {
       new iam.PolicyStatement({
         actions: ["cloudwatch:PutMetricData"],
         resources: ["*"],
-      })
+      }),
     );
 
     // Grant SSM access for CloudFront private key (only when CDN is configured)
@@ -61,7 +60,7 @@ export class ServiceConstruct extends Construct {
           resources: [
             `arn:aws:ssm:${cdk.Stack.of(this).region}:${cdk.Stack.of(this).account}:parameter/comfy-aws/cloudfront-private-key`,
           ],
-        })
+        }),
       );
     }
 
@@ -69,7 +68,9 @@ export class ServiceConstruct extends Construct {
     const executionRole = new iam.Role(this, "ExecutionRole", {
       assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
       managedPolicies: [
-        iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AmazonECSTaskExecutionRolePolicy"),
+        iam.ManagedPolicy.fromAwsManagedPolicyName(
+          "service-role/AmazonECSTaskExecutionRolePolicy",
+        ),
       ],
     });
     executionRole.addToPolicy(
@@ -78,7 +79,7 @@ export class ServiceConstruct extends Construct {
         resources: [
           `arn:aws:ssm:${cdk.Stack.of(this).region}:${cdk.Stack.of(this).account}:parameter/comfy-aws/api-keys`,
         ],
-      })
+      }),
     );
 
     const taskDef = new ecs.Ec2TaskDefinition(this, "TaskDef", {
@@ -107,7 +108,11 @@ export class ServiceConstruct extends Construct {
       }),
       memoryReservationMiB: 128,
     });
-    modelSync.addMountPoints({ containerPath: "/data", sourceVolume: "data", readOnly: false });
+    modelSync.addMountPoints({
+      containerPath: "/data",
+      sourceVolume: "data",
+      readOnly: false,
+    });
 
     // ComfyUI container
     const comfyui = taskDef.addContainer("comfyui", {
@@ -115,7 +120,7 @@ export class ServiceConstruct extends Construct {
         ? ecs.ContainerImage.fromRegistry(props.comfyuiImageUri)
         : ecs.ContainerImage.fromAsset(
             path.join(__dirname, "../../../docker/comfyui"),
-            { platform: ecr_assets.Platform.LINUX_AMD64 }
+            { platform: ecr_assets.Platform.LINUX_AMD64 },
           ),
       essential: true,
       // Override CMD to remove --cpu for GPU in production
@@ -128,16 +133,19 @@ export class ServiceConstruct extends Construct {
       memoryReservationMiB: 8192,
       gpuCount: 1,
     });
-    comfyui.addMountPoints({ containerPath: "/app/models", sourceVolume: "data", readOnly: false });
+    comfyui.addMountPoints({
+      containerPath: "/app/models",
+      sourceVolume: "data",
+      readOnly: false,
+    });
 
     // API sidecar container
     const apiContainer = taskDef.addContainer("api", {
       image: props.apiImageUri
         ? ecs.ContainerImage.fromRegistry(props.apiImageUri)
-        : ecs.ContainerImage.fromAsset(
-            path.join(__dirname, "../../../api"),
-            { platform: ecr_assets.Platform.LINUX_AMD64 }
-          ),
+        : ecs.ContainerImage.fromAsset(path.join(__dirname, "../../../api"), {
+            platform: ecr_assets.Platform.LINUX_AMD64,
+          }),
       essential: true,
       portMappings: [{ containerPort: 8000, hostPort: 8000 }],
       environment: {
@@ -146,7 +154,9 @@ export class ServiceConstruct extends Construct {
         DYNAMO_TABLE: props.table.tableName,
         AWS_DEFAULT_REGION: cdk.Stack.of(this).region,
         ...(props.cdnDomain ? { CLOUDFRONT_DOMAIN: props.cdnDomain } : {}),
-        ...(props.cdnKeyPairId ? { CLOUDFRONT_KEY_PAIR_ID: props.cdnKeyPairId } : {}),
+        ...(props.cdnKeyPairId
+          ? { CLOUDFRONT_KEY_PAIR_ID: props.cdnKeyPairId }
+          : {}),
       },
       secrets: {
         // Operator sets this SSM parameter before deploying.
@@ -154,8 +164,10 @@ export class ServiceConstruct extends Construct {
         // Empty string (default) disables auth entirely.
         API_KEYS: ecs.Secret.fromSsmParameter(
           ssm.StringParameter.fromStringParameterName(
-            this, "ApiKeysParam", "/comfy-aws/api-keys"
-          )
+            this,
+            "ApiKeysParam",
+            "/comfy-aws/api-keys",
+          ),
         ),
       },
       logging: ecs.LogDrivers.awsLogs({
@@ -163,7 +175,10 @@ export class ServiceConstruct extends Construct {
         streamPrefix: "api",
       }),
       healthCheck: {
-        command: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"],
+        command: [
+          "CMD-SHELL",
+          "curl -f http://localhost:8000/health || exit 1",
+        ],
         interval: cdk.Duration.seconds(15),
         timeout: cdk.Duration.seconds(5),
         retries: 3,
@@ -188,7 +203,8 @@ export class ServiceConstruct extends Construct {
     //     --query 'Reservations[].Instances[].PublicIpAddress' --output text
     new cdk.CfnOutput(this, "ApiAccessNote", {
       value: "curl http://<instance-public-ip>:8000/health",
-      description: "Get instance IP: aws ec2 describe-instances --filters Name=instance-state-name,Values=running --query Reservations[].Instances[].PublicIpAddress --output text",
+      description:
+        "Get instance IP: aws ec2 describe-instances --filters Name=instance-state-name,Values=running --query Reservations[].Instances[].PublicIpAddress --output text",
     });
   }
 }

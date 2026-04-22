@@ -89,9 +89,9 @@ tags: [frontend, ui]
 
 ### Risks & Mitigations
 
-| Risk | Mitigation |
-|------|------------|
-| CloudFront signed URLs expire | Lightbox opens immediately on click — URL is already valid at that point |
+| Risk                                                                   | Mitigation                                                                            |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| CloudFront signed URLs expire                                          | Lightbox opens immediately on click — URL is already valid at that point              |
 | History thumbnails may not have a full-res URL separate from thumbnail | Both `thumbnail_url` and full-res URL come from the same signed URL today — use as-is |
 
 ---
@@ -104,6 +104,6 @@ tags: [frontend, ui]
 
 ## Changelog
 
-| Date | Change |
-|------|--------|
+| Date       | Change        |
+| ---------- | ------------- |
 | 2026-03-28 | Initial draft |

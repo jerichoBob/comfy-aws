@@ -118,6 +118,7 @@ MODEL_DIRS = {
 ```
 
 `async def start_download(url, type, filename, token_override) -> DownloadJob`:
+
 1. Reject with 409 if any job is currently `downloading` or `mirroring`
 2. Resolve `token`: use `token_override` if provided, else `provider_tokens.token_for_url(url)`
 3. Resolve `filename` from `Content-Disposition` or URL path if not provided
@@ -126,6 +127,7 @@ MODEL_DIRS = {
 6. Return job immediately
 
 `async def _run_download(job, token)`:
+
 1. Stream URL to `{MODEL_DIRS[type]}/{filename}` using `httpx.AsyncClient` with `stream()` — write chunks to disk
 2. Send `Authorization: Bearer {token}` header if token is set
 3. On completion: update `bytes_downloaded`, set status `mirroring`
@@ -164,17 +166,22 @@ Wire into `main.py`: `app.include_router(admin_router, prefix="/admin")`.
 Add two new modes to `sync-to-aws.sh`:
 
 **`--set-token <provider> <token>`** — store a provider token in SSM as SecureString:
+
 ```bash
 bash .claude/scripts/sync-to-aws.sh --set-token civitai <token>
 bash .claude/scripts/sync-to-aws.sh --set-token hf <token>
 ```
+
 Writes to `/comfy-aws/civitai-token` or `/comfy-aws/hf-token`. Prints confirmation (never echoes the token value).
 
 **`--download <url> --type <type>`** — trigger a remote download via the API:
+
 ```bash
 bash .claude/scripts/sync-to-aws.sh --download <url> --type checkpoint [--filename name.safetensors]
 ```
+
 Implementation:
+
 - POSTs to `http://$API_HOST:8000/admin/models/download` with `Authorization: Bearer $COMFY_API_KEY`
 - Polls `GET /admin/models/downloads/{id}` every 5s until `ready` or `failed`
 - Prints progress dots; on `ready` confirms the filename in `GET /models`
@@ -199,6 +206,7 @@ A 6 GB model can't fit in a Lambda/container memory budget even if ECS has it. `
 ### CivitAI auth
 
 CivitAI supports two patterns:
+
 - `?token=<api-key>` query param appended to the download URL
 - `Authorization: Bearer <api-key>` header
 
@@ -227,6 +235,6 @@ The S3 upload happens after the file is fully on disk — not concurrently with 
 
 ## Changelog
 
-| Date | Change |
-|------|--------|
+| Date       | Change        |
+| ---------- | ------------- |
 | 2026-04-22 | Initial draft |

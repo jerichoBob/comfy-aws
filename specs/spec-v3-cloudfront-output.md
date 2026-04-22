@@ -23,6 +23,7 @@ The current design stores S3 presigned URLs in DynamoDB at upload time. These ha
 3. **Direct S3 exposure**: The bucket is currently private, but the presigned URL approach means the S3 bucket name and key structure are visible in every URL — unnecessary attack surface.
 
 CloudFront + Origin Access Control (OAC) solves all three:
+
 - Signed CloudFront URLs can have any expiry, can be invalidated per-path
 - The S3 bucket is completely locked — no direct access possible, not even with valid AWS credentials
 - URL generation happens at request time (`GET /jobs/{id}`), so the URL in the response is always fresh
@@ -114,33 +115,33 @@ CloudFront + Origin Access Control (OAC) solves all three:
 
 #### Dormant cost (no traffic)
 
-| Resource | Cost |
-|----------|------|
-| CloudFront distribution | $0 (no standing charge) |
-| SSM Parameter Store (standard) | $0 |
-| S3 bucket (already exists) | $0 |
-| **Total new dormant cost** | **$0/month** |
+| Resource                       | Cost                    |
+| ------------------------------ | ----------------------- |
+| CloudFront distribution        | $0 (no standing charge) |
+| SSM Parameter Store (standard) | $0                      |
+| S3 bucket (already exists)     | $0                      |
+| **Total new dormant cost**     | **$0/month**            |
 
 #### Active cost (per image delivered)
 
-| Item | Rate | Notes |
-|------|------|-------|
-| CloudFront HTTPS requests | $0.009 / 10k | 1,000 image fetches = $0.0009 |
-| CloudFront data transfer | $0.009 / GB | 1MB image × 1,000 = 1GB = $0.009 |
-| S3 → CloudFront transfer | $0 | Same-region, no egress charge |
-| S3 → client direct (current) | $0.09 / GB | CloudFront is 10× cheaper |
+| Item                         | Rate         | Notes                            |
+| ---------------------------- | ------------ | -------------------------------- |
+| CloudFront HTTPS requests    | $0.009 / 10k | 1,000 image fetches = $0.0009    |
+| CloudFront data transfer     | $0.009 / GB  | 1MB image × 1,000 = 1GB = $0.009 |
+| S3 → CloudFront transfer     | $0           | Same-region, no egress charge    |
+| S3 → client direct (current) | $0.09 / GB   | CloudFront is 10× cheaper        |
 
 CloudFront is **cheaper than direct S3 delivery** for data transfer, and effectively free at personal scale.
 
 #### Comparison to current approach
 
-| | Current (S3 presigned) | v3 (CloudFront) |
-|-|------------------------|-----------------|
-| Dormant cost | $0 | $0 |
-| Data transfer | $0.09/GB | $0.009/GB |
-| URL revocation | ❌ impossible | ✅ per-path invalidation |
-| URL expiry | 1 hour (broken UX) | 7 days (matches job TTL) |
-| Bucket exposed | Bucket name in URL | ❌ CloudFront domain only |
+|                | Current (S3 presigned) | v3 (CloudFront)           |
+| -------------- | ---------------------- | ------------------------- |
+| Dormant cost   | $0                     | $0                        |
+| Data transfer  | $0.09/GB               | $0.009/GB                 |
+| URL revocation | ❌ impossible          | ✅ per-path invalidation  |
+| URL expiry     | 1 hour (broken UX)     | 7 days (matches job TTL)  |
+| Bucket exposed | Bucket name in URL     | ❌ CloudFront domain only |
 
 ### Dependencies
 
@@ -163,10 +164,10 @@ CloudFront is **cheaper than direct S3 delivery** for data transfer, and effecti
 
 ### Risks & Mitigations
 
-| Risk | Mitigation |
-|------|------------|
-| CloudFront propagation delay (~15 min on deploy) | One-time cost on CDK deploy; no impact on normal operation |
-| Private key rotation invalidates all outstanding URLs | Rotation is manual/infrequent; document rotation runbook; URLs are short-lived anyway |
+| Risk                                                                   | Mitigation                                                                                                                          |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| CloudFront propagation delay (~15 min on deploy)                       | One-time cost on CDK deploy; no impact on normal operation                                                                          |
+| Private key rotation invalidates all outstanding URLs                  | Rotation is manual/infrequent; document rotation runbook; URLs are short-lived anyway                                               |
 | `cryptography` library RSA signing uses SHA-1 (CloudFront requirement) | SHA-1 is required by CloudFront's signed URL spec — not a weakness here (it's not used for data integrity, only URL authentication) |
-| SSM GetParameter adds latency on cold start | Key is fetched once at startup and cached in memory; no per-request SSM call |
-| Local dev missing CloudFront | Feature flag: `CLOUDFRONT_DOMAIN` unset → S3 presigned. Tests that need CloudFront behavior can use a real key pair locally |
+| SSM GetParameter adds latency on cold start                            | Key is fetched once at startup and cached in memory; no per-request SSM call                                                        |
+| Local dev missing CloudFront                                           | Feature flag: `CLOUDFRONT_DOMAIN` unset → S3 presigned. Tests that need CloudFront behavior can use a real key pair locally         |

@@ -21,36 +21,37 @@ FastAPI wrapper around ComfyUI, deployed on AWS ECS (EC2 GPU). The API translate
 ## No Mocks Policy
 
 **Never use mocks in tests.** Use real implementations:
+
 - LocalStack for S3 and DynamoDB
 - Real ComfyUI instance for HTTP/WebSocket tests
 - If ComfyUI is unavailable: `pytest.skip("ComfyUI not available")` — not a mock
 
 ## File Purposes
 
-| File | Purpose |
-|------|---------|
-| `api/app/comfy_client.py` | Async HTTP client for ComfyUI: `submit_prompt()`, `get_history()`, `get_image()` |
-| `api/app/middleware/auth.py` | `ApiKeyMiddleware`: checks `X-API-Key`; skips when `API_KEYS=""`; `/health` exempt |
-| `api/app/services/job_service.py` | Job lifecycle: create, submit, poll history, upload, update DynamoDB |
-| `api/app/services/workflow.py` | Template load/list, `merge_params()`, `validate_params()` |
-| `api/app/services/dynamo.py` | DynamoDB read/write; stores `output_keys` (S3 keys, not URLs) |
-| `api/app/services/s3.py` | S3 upload (returns key); `generate_presigned_url()` for local dev fallback |
-| `api/app/services/cdn.py` | CloudFront signed URL generation; loads RSA key from SSM on startup |
-| `api/app/routers/jobs.py` | Job endpoints; `_resolve_output_urls()` generates URLs at request time |
-| `api/app/config.py` | Pydantic Settings (all env vars including API_KEYS, CLOUDFRONT_*) |
-| `frontend/src/App.tsx` | Root layout: left sidebar + main prompt area + right history panel |
-| `frontend/src/hooks/useJob.ts` | Job state machine: idle→submitting→polling→done\|failed (2s poll) |
-| `frontend/src/hooks/useApi.ts` | Models + workflows fetch; `apiFetch()` wrapper injects `X-API-Key` |
-| `infra/lib/constructs/cdn.ts` | CloudFront distribution, OAC, key group, S3 bucket deny policy |
-| `infra/lib/constructs/service.ts` | ECS task def: comfyui + api sidecar + model-sync; pulls API_KEYS from SSM |
-| `infra/lib/constructs/compute.ts` | ECS cluster, ASG g4dn.xlarge Spot, EBS volumes, user data |
-| `infra/lib/constructs/storage.ts` | S3 bucket (7-day lifecycle on outputs), DynamoDB (TTL, GSI) |
-| `infra/lib/constructs/network.ts` | VPC, subnets, security groups |
-| `docker/comfyui/Dockerfile` | ComfyUI image; `--cpu` for local dev, GPU for AWS |
-| `docker/model-sync/entrypoint.sh` | `aws s3 sync` init container; syncs models S3 → EBS |
-| `docker-compose.yml` | Local dev: ComfyUI (CPU) + FastAPI + LocalStack |
-| `docker-compose.gpu.yml` | GPU override for local GPU testing |
-| `.claude/scripts/revoke-output.sh` | Delete S3 outputs + CloudFront invalidation for a job ID |
+| File                               | Purpose                                                                            |
+| ---------------------------------- | ---------------------------------------------------------------------------------- |
+| `api/app/comfy_client.py`          | Async HTTP client for ComfyUI: `submit_prompt()`, `get_history()`, `get_image()`   |
+| `api/app/middleware/auth.py`       | `ApiKeyMiddleware`: checks `X-API-Key`; skips when `API_KEYS=""`; `/health` exempt |
+| `api/app/services/job_service.py`  | Job lifecycle: create, submit, poll history, upload, update DynamoDB               |
+| `api/app/services/workflow.py`     | Template load/list, `merge_params()`, `validate_params()`                          |
+| `api/app/services/dynamo.py`       | DynamoDB read/write; stores `output_keys` (S3 keys, not URLs)                      |
+| `api/app/services/s3.py`           | S3 upload (returns key); `generate_presigned_url()` for local dev fallback         |
+| `api/app/services/cdn.py`          | CloudFront signed URL generation; loads RSA key from SSM on startup                |
+| `api/app/routers/jobs.py`          | Job endpoints; `_resolve_output_urls()` generates URLs at request time             |
+| `api/app/config.py`                | Pydantic Settings (all env vars including API*KEYS, CLOUDFRONT*\*)                 |
+| `frontend/src/App.tsx`             | Root layout: left sidebar + main prompt area + right history panel                 |
+| `frontend/src/hooks/useJob.ts`     | Job state machine: idle→submitting→polling→done\|failed (2s poll)                  |
+| `frontend/src/hooks/useApi.ts`     | Models + workflows fetch; `apiFetch()` wrapper injects `X-API-Key`                 |
+| `infra/lib/constructs/cdn.ts`      | CloudFront distribution, OAC, key group, S3 bucket deny policy                     |
+| `infra/lib/constructs/service.ts`  | ECS task def: comfyui + api sidecar + model-sync; pulls API_KEYS from SSM          |
+| `infra/lib/constructs/compute.ts`  | ECS cluster, ASG g4dn.xlarge Spot, EBS volumes, user data                          |
+| `infra/lib/constructs/storage.ts`  | S3 bucket (7-day lifecycle on outputs), DynamoDB (TTL, GSI)                        |
+| `infra/lib/constructs/network.ts`  | VPC, subnets, security groups                                                      |
+| `docker/comfyui/Dockerfile`        | ComfyUI image; `--cpu` for local dev, GPU for AWS                                  |
+| `docker/model-sync/entrypoint.sh`  | `aws s3 sync` init container; syncs models S3 → EBS                                |
+| `docker-compose.yml`               | Local dev: ComfyUI (CPU) + FastAPI + LocalStack                                    |
+| `docker-compose.gpu.yml`           | GPU override for local GPU testing                                                 |
+| `.claude/scripts/revoke-output.sh` | Delete S3 outputs + CloudFront invalidation for a job ID                           |
 
 ## Development Workflow
 
@@ -81,19 +82,19 @@ cd infra && cdk deploy --all \
 
 ## Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `COMFYUI_URL` | `http://localhost:8188` | ComfyUI server address |
-| `S3_BUCKET` | — | S3 bucket for models + outputs |
-| `DYNAMO_TABLE` | — | DynamoDB table name for jobs |
-| `AWS_DEFAULT_REGION` | — | AWS region |
-| `AWS_ENDPOINT_URL` | — | Set to LocalStack URL in local dev |
-| `PRESIGNED_URL_EXPIRY_SECONDS` | `3600` | Presigned URL lifetime |
-| `JOB_TTL_DAYS` | `7` | DynamoDB job auto-expiry |
-| `API_KEYS` | `""` | Comma-separated valid API keys; empty disables auth. In AWS, sourced from SSM `/comfy-aws/api-keys` |
-| `CLOUDFRONT_DOMAIN` | `""` | CloudFront domain for signed URLs; empty = local dev (falls back to S3 presigned) |
-| `CLOUDFRONT_KEY_PAIR_ID` | `""` | CloudFront key pair ID for signed URL signing |
-| `CLOUDFRONT_PRIVATE_KEY_SSM_PATH` | `/comfy-aws/cloudfront-private-key` | SSM path for RSA private key PEM |
+| Variable                          | Default                             | Description                                                                                         |
+| --------------------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `COMFYUI_URL`                     | `http://localhost:8188`             | ComfyUI server address                                                                              |
+| `S3_BUCKET`                       | —                                   | S3 bucket for models + outputs                                                                      |
+| `DYNAMO_TABLE`                    | —                                   | DynamoDB table name for jobs                                                                        |
+| `AWS_DEFAULT_REGION`              | —                                   | AWS region                                                                                          |
+| `AWS_ENDPOINT_URL`                | —                                   | Set to LocalStack URL in local dev                                                                  |
+| `PRESIGNED_URL_EXPIRY_SECONDS`    | `3600`                              | Presigned URL lifetime                                                                              |
+| `JOB_TTL_DAYS`                    | `7`                                 | DynamoDB job auto-expiry                                                                            |
+| `API_KEYS`                        | `""`                                | Comma-separated valid API keys; empty disables auth. In AWS, sourced from SSM `/comfy-aws/api-keys` |
+| `CLOUDFRONT_DOMAIN`               | `""`                                | CloudFront domain for signed URLs; empty = local dev (falls back to S3 presigned)                   |
+| `CLOUDFRONT_KEY_PAIR_ID`          | `""`                                | CloudFront key pair ID for signed URL signing                                                       |
+| `CLOUDFRONT_PRIVATE_KEY_SSM_PATH` | `/comfy-aws/cloudfront-private-key` | SSM path for RSA private key PEM                                                                    |
 
 ## AWS Infrastructure
 

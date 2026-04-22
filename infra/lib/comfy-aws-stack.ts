@@ -23,8 +23,12 @@ export class ComfyAwsStack extends cdk.Stack {
     // Requires operator-generated RSA-2048 key pair passed via context:
     //   cdk deploy -c cfPublicKey="$(cat cf_public.pem)" -c cfPrivateKey="$(cat cf_private.pem)"
     // Generate with: openssl genrsa -out cf_private.pem 2048 && openssl rsa -pubout -in cf_private.pem -out cf_public.pem
-    const cfPublicKey = this.node.tryGetContext("cfPublicKey") as string | undefined;
-    const cfPrivateKey = this.node.tryGetContext("cfPrivateKey") as string | undefined;
+    const cfPublicKey = this.node.tryGetContext("cfPublicKey") as
+      | string
+      | undefined;
+    const cfPrivateKey = this.node.tryGetContext("cfPrivateKey") as
+      | string
+      | undefined;
 
     let cdnDomain: string | undefined;
     let cdnKeyPairId: string | undefined;

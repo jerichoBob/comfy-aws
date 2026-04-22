@@ -1,23 +1,23 @@
-import { useState } from 'react'
-import { Clock, Download, Hash, Box } from 'lucide-react'
-import type { Job } from '../hooks/useJob'
-import { Lightbox, type LightboxMeta } from './Lightbox'
+import { useState } from "react";
+import { Clock, Download, Hash, Box } from "lucide-react";
+import type { Job } from "../hooks/useJob";
+import { Lightbox, type LightboxMeta } from "./Lightbox";
 
 interface Props {
-  job: Job
-  onCopyToSession?: (meta: LightboxMeta) => void
+  job: Job;
+  onCopyToSession?: (meta: LightboxMeta) => void;
 }
 
 export function ResultPanel({ job, onCopyToSession }: Props) {
-  const [lightboxOpen, setLightboxOpen] = useState(false)
-  const imageUrl = job.output_urls[0]
-  const checkpoint = String(job.params.checkpoint ?? '—')
-  const seed = String(job.params.seed ?? '—')
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const imageUrl = job.output_urls[0];
+  const checkpoint = String(job.params.checkpoint ?? "—");
+  const seed = String(job.params.seed ?? "—");
 
   const meta: LightboxMeta = {
     ...(job.params as LightboxMeta),
     duration_seconds: job.duration_seconds ?? undefined,
-  }
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -64,8 +64,13 @@ export function ResultPanel({ job, onCopyToSession }: Props) {
       )}
 
       {lightboxOpen && imageUrl && (
-        <Lightbox url={imageUrl} meta={meta} onClose={() => setLightboxOpen(false)} onCopyToSession={onCopyToSession} />
+        <Lightbox
+          url={imageUrl}
+          meta={meta}
+          onClose={() => setLightboxOpen(false)}
+          onCopyToSession={onCopyToSession}
+        />
       )}
     </div>
-  )
+  );
 }

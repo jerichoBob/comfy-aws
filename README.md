@@ -23,16 +23,16 @@ Generated images: S3 (private) ←── CloudFront (signed URLs) ──→ Clie
 
 ## API Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/health` | ComfyUI reachability check (auth-exempt) |
-| `GET` | `/models` | List checkpoints, LoRAs, VAEs |
-| `GET` | `/workflows` | List available workflow templates |
-| `GET` | `/workflows/{id}` | Workflow parameter schema |
-| `POST` | `/jobs` | Submit a job `{workflow_id, params}` |
-| `GET` | `/jobs/{id}` | Job status + signed image URLs (CloudFront or S3 presigned) |
-| `DELETE` | `/jobs/{id}` | Cancel a queued job |
-| `GET` | `/ui` | React generation UI (served from `frontend/dist/`) |
+| Method   | Path              | Description                                                 |
+| -------- | ----------------- | ----------------------------------------------------------- |
+| `GET`    | `/health`         | ComfyUI reachability check (auth-exempt)                    |
+| `GET`    | `/models`         | List checkpoints, LoRAs, VAEs                               |
+| `GET`    | `/workflows`      | List available workflow templates                           |
+| `GET`    | `/workflows/{id}` | Workflow parameter schema                                   |
+| `POST`   | `/jobs`           | Submit a job `{workflow_id, params}`                        |
+| `GET`    | `/jobs/{id}`      | Job status + signed image URLs (CloudFront or S3 presigned) |
+| `DELETE` | `/jobs/{id}`      | Cancel a queued job                                         |
+| `GET`    | `/ui`             | React generation UI (served from `frontend/dist/`)          |
 
 All endpoints except `GET /health` require `X-API-Key` header when `API_KEYS` is set.
 
@@ -82,13 +82,29 @@ api/workflows/txt2img-sdxl/
 ```
 
 `schema.json` example:
+
 ```json
 {
   "id": "txt2img-sdxl",
   "parameters": {
-    "positive_prompt": {"node_id": "6", "input": "text", "type": "string", "required": true},
-    "steps":           {"node_id": "3", "input": "steps", "type": "integer", "default": 20},
-    "seed":            {"node_id": "3", "input": "seed",  "type": "integer", "default": -1}
+    "positive_prompt": {
+      "node_id": "6",
+      "input": "text",
+      "type": "string",
+      "required": true
+    },
+    "steps": {
+      "node_id": "3",
+      "input": "steps",
+      "type": "integer",
+      "default": 20
+    },
+    "seed": {
+      "node_id": "3",
+      "input": "seed",
+      "type": "integer",
+      "default": -1
+    }
   }
 }
 ```
@@ -315,14 +331,14 @@ See [`specs/README.md`](specs/README.md) for implementation status. v2–v5 comp
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| API | FastAPI, uvicorn, httpx, aioboto3, cryptography |
-| UI | React, Vite, TypeScript, Tailwind CSS, Lucide React |
-| Auth | X-API-Key middleware; keys in SSM Parameter Store |
-| CDN | CloudFront + OAC; RSA signed URLs generated locally |
-| Infra | AWS CDK v2 (TypeScript) |
-| Compute | ECS on EC2 g4dn.xlarge Spot |
-| Storage | S3, DynamoDB |
-| Local dev | Docker Compose, LocalStack |
-| Tests | pytest, pytest-asyncio (no mocks) |
+| Layer     | Technology                                          |
+| --------- | --------------------------------------------------- |
+| API       | FastAPI, uvicorn, httpx, aioboto3, cryptography     |
+| UI        | React, Vite, TypeScript, Tailwind CSS, Lucide React |
+| Auth      | X-API-Key middleware; keys in SSM Parameter Store   |
+| CDN       | CloudFront + OAC; RSA signed URLs generated locally |
+| Infra     | AWS CDK v2 (TypeScript)                             |
+| Compute   | ECS on EC2 g4dn.xlarge Spot                         |
+| Storage   | S3, DynamoDB                                        |
+| Local dev | Docker Compose, LocalStack                          |
+| Tests     | pytest, pytest-asyncio (no mocks)                   |
