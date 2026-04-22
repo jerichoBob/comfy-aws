@@ -111,6 +111,17 @@ class ComfyClient:
             "vaes": vaes if isinstance(vaes, list) else [],
         }
 
+    async def upload_image(self, filename: str, image_data: bytes) -> str:
+        """POST /upload/image — upload image bytes, returns the filename ComfyUI stored it as."""
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{self.base_url}/upload/image",
+                files={"image": (filename, image_data, "image/png")},
+                timeout=30.0,
+            )
+            response.raise_for_status()
+            return response.json()["name"]
+
     async def interrupt(self) -> None:
         """POST /interrupt — stop the currently executing generation."""
         async with httpx.AsyncClient() as client:

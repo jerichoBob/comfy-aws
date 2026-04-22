@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import logging
 from datetime import datetime
 
@@ -14,14 +15,37 @@ logger = logging.getLogger(__name__)
 _comfy = ComfyClient()
 
 
+async def _upload_image_params(job_id: str, schema, params: dict) -> dict:
+    """For any param with type='image' whose value is a base64 data URI, upload to ComfyUI and replace with filename."""
+    result = dict(params)
+    for name, param in schema.params.items():
+        if param.type != "image":
+            continue
+        value = result.get(name)
+        if not isinstance(value, str) or not value.startswith("data:"):
+            continue
+        # Decode base64 data URI: "data:<mime>;base64,<data>"
+        try:
+            _, encoded = value.split(",", 1)
+            image_data = base64.b64decode(encoded)
+        except Exception as exc:
+            raise ValueError(f"Invalid base64 image for param '{name}': {exc}") from exc
+        filename = await _comfy.upload_image(f"{job_id}_{name}.png", image_data)
+        result[name] = filename
+        logger.info("Job %s: uploaded image param '%s' → %s", job_id, name, filename)
+    return result
+
+
 async def create_job(workflow_id: str, params: dict) -> Job:
     """Validate params, store job, submit to ComfyUI, launch background watch task."""
     graph, schema = load_template(workflow_id)
     validate_params(schema, params)
-    merged = merge_params(graph, schema, params)
 
     job = Job(workflow_id=workflow_id, params=params)
     await dynamo.create_job(job)
+
+    params = await _upload_image_params(job.id, schema, params)
+    merged = merge_params(graph, schema, params)
 
     try:
         prompt_id = await _comfy.submit_prompt(merged)

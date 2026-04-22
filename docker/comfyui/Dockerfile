@@ -13,6 +13,11 @@ RUN pip install --no-cache-dir \
 
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Custom nodes
+RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
+RUN git clone --depth 1 https://github.com/Suzie1/ComfyUI_Comfyroll_CustomNodes.git \
+    /app/custom_nodes/ComfyUI_Comfyroll_CustomNodes
+
 # Create model directories
 RUN mkdir -p models/checkpoints models/loras models/vae output
 
