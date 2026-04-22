@@ -262,9 +262,13 @@ See [`specs/README.md`](specs/README.md) for implementation status. v2–v5 comp
 
 ## Changelog
 
-0.7.0
+0.7.1
 
 ### Release Notes
+
+#### v0.7.1 (2026-04-21)
+
+- test: add model-sync integration tests and AWS verification script [`a54eb1d`]
 
 #### v0.7.0 (2026-04-21)
 
